@@ -506,7 +506,8 @@
   @keyframes flutter{ 0%,100%{ transform:scaleX(1); } 50%{ transform:scaleX(.5) translateY(-1px); } }
   @keyframes soar{ 0%,100%{ transform:translateY(0) rotate(-5deg); } 50%{ transform:translateY(-2px) rotate(5deg); } }
   @keyframes floaty{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-2px); } }
-  .score-row .name-part{ flex-wrap:wrap; row-gap:4px; }
+  .score-row .name-part{ flex-wrap:nowrap; }
+  .score-row .name-part > .dot{ align-self:center; }
   @keyframes shine{ to{ background-position:-220% 0; } }
   @keyframes twinkle{ 0%,100%{ opacity:.25; transform:scale(.6) rotate(0deg); } 50%{ opacity:1; transform:scale(1.15) rotate(20deg); } }
   @keyframes glow{ 0%,100%{ opacity:.55; } 50%{ opacity:1; } }
@@ -1490,8 +1491,11 @@
           }
           namePart.appendChild(stack);
         } else {
-          namePart.appendChild(nameEl);
-          if(badges) namePart.appendChild(badges);
+          var sstack = document.createElement('div');
+          sstack.className = 'name-stack';
+          sstack.appendChild(nameEl);
+          if(badges) sstack.appendChild(badges);
+          namePart.appendChild(sstack);
         }
 
         var stepRow = document.createElement('div');
@@ -2219,6 +2223,11 @@
     boot({});
   }
 })();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  }
 </script>
 </body>
 </html>
