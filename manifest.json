@@ -1,7 +1,7 @@
 {
   "name": "내기골프계산기",
-  "short_name": "내기골프",
-  "description": "골프 내기 자동 정산 앱 (스트로크 · 팀전)",
+  "short_name": "내기골프계산기",
+  "description": "내기골프계산기 - 스트로크 · 팀전 골프 내기 자동 정산",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
