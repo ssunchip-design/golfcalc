@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="골프 내기 자동 정산 - 스트로크 · 팀전(뽑기) 모드. 홀마다 타수를 입력하면 정산 금액을 자동으로 계산해줍니다.">
+<meta name="description" content="내기골프계산기 - 스트로크 · 팀전(뽑기) 골프 내기 자동 정산">
 <meta name="theme-color" content="#0E3A2B" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0B0F0D" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.json">
@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192-any.png">
 <title>내기골프계산기</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Dancing+Script:wght@700&display=swap');
 
   :root{
     --bg:#E8E2D4;
@@ -30,6 +30,8 @@
     --line:#D9D1BF;
     --shadow: 0 1px 0 rgba(18,26,22,.04);
     --red:#A7342F; --red-bg:#F2E0DD; --blue:#264E8A; --blue-bg:#E0E6F0;
+    --sel:#1B7A52; --sel-ink:#FFFFFF; --sel-ring:rgba(27,122,82,.35);
+    --cele:linear-gradient(100deg,#6E4400 0%,#B8820F 28%,#E9C35A 46%,#B8820F 64%,#6E4400 100%);
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -49,6 +51,8 @@
       --line:#262E2A;
       --shadow: 0 1px 0 rgba(0,0,0,.4);
       --red:#E27B70; --red-bg:#2C1917; --blue:#83A6DC; --blue-bg:#172030;
+      --sel:#EAC47E; --sel-ink:#141A16; --sel-ring:rgba(234,196,126,.35);
+      --cele:linear-gradient(100deg,#B98A2A 0%,#F6D77A 30%,#FFF6D2 45%,#E7B23E 60%,#B98A2A 100%);
     }
   }
   :root[data-theme="dark"]{
@@ -68,6 +72,8 @@
     --line:#262E2A;
     --shadow: 0 1px 0 rgba(0,0,0,.4);
     --red:#E27B70; --red-bg:#2C1917; --blue:#83A6DC; --blue-bg:#172030;
+    --sel:#EAC47E; --sel-ink:#141A16; --sel-ring:rgba(234,196,126,.35);
+    --cele:linear-gradient(100deg,#B98A2A 0%,#F6D77A 30%,#FFF6D2 45%,#E7B23E 60%,#B98A2A 100%);
   }
 
   *{box-sizing:border-box}
@@ -118,7 +124,8 @@
   }
   .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
   .three-col{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
-  .three-col label{ display:block; font-size:11px; color:var(--muted); margin-bottom:4px; }
+  .three-col label, .mini-label{ display:block; font-size:11px; color:var(--muted); margin-bottom:4px; }
+  .two-col .money-spin{ width:100%; }
 
   .stepper-row{ display:flex; align-items:center; gap:10px; }
   .stepper-btn{
@@ -153,7 +160,11 @@
     padding:7px 12px; border-radius:4px; border:1px solid var(--line);
     background:var(--surface-2); color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
   }
-  .chip[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .chip{ color:var(--muted); }
+  .chip[aria-pressed="true"]{
+    background:var(--sel); border-color:var(--sel); color:var(--sel-ink); font-weight:800;
+    box-shadow:0 0 0 2px var(--sel-ring), 0 2px 6px -1px var(--sel-ring);
+  }
   .chip.small{ padding:6px 12px; font-size:13px; }
   .chip.warn[aria-pressed="true"]{ background:var(--gold); border-color:var(--gold); color:var(--accent-ink); }
   .chip.nl[aria-pressed="true"]{ background:var(--gold); border-color:var(--gold); color:var(--accent-ink); }
@@ -266,6 +277,8 @@
   .final-row .meta{ flex:1; min-width:0; }
   .final-row .pname{ font-weight:700; font-size:15px; }
   .final-row .strokes{ font-size:12px; color:var(--muted); }
+  .final-row .rel-sum{ font-size:13px; font-weight:700; color:var(--gold); margin-left:6px; }
+  .final-row .tot-strokes{ font-size:13px; font-weight:500; color:var(--muted); margin-left:6px; }
   .final-row .money{  font-weight:700; font-size:19px; flex:none; }
 
   .settle-list{ display:flex; flex-direction:column; gap:4px; }
@@ -320,19 +333,23 @@
 
   /* Mode select */
   .mode-intro{ font-size:12px; color:var(--muted); letter-spacing:.3px; padding:2px 2px 6px; }
-  .mode-list{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  #screen-mode:not([hidden]){ min-height:calc(100vh - 110px); min-height:calc(100dvh - 110px); display:flex; flex-direction:column; justify-content:center; }
+  .mode-intro{ text-align:center; }
+  .mode-list{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
+  .mode-list > .mode-card{ min-width:0; }
   .mode-card{
     position:relative; display:flex; flex-direction:column; align-items:center; text-align:center;
-    width:100%; padding:20px 10px 16px; min-height:220px;
+    width:100%; aspect-ratio:1/1; padding:8px 6px; justify-content:center; overflow:hidden;
     border:1px solid var(--line); border-radius:4px; background:var(--surface); color:var(--ink);
     cursor:pointer; box-shadow:var(--shadow);
   }
-  .mode-card .art{ display:flex; align-items:flex-end; justify-content:center; gap:2px; height:56px; margin-bottom:12px; --eye:var(--surface); }
-  .mode-card .art .ic{ width:50px; height:50px; }
+  .mode-card .art{ display:flex; align-items:flex-end; justify-content:center; gap:2px; height:40px; margin-bottom:6px; --eye:var(--surface); }
+  .mode-card .art .ic{ width:40px; height:40px; }
   .mode-card .art .ic.r{ color:var(--red); }
   .mode-card .art .ic.b{ color:var(--blue); }
   .mode-card .art .ic.g{ color:var(--accent-dark); }
-  .mode-card .go{ margin-top:auto; padding-top:12px; font-size:12px; font-weight:700; color:var(--gold); letter-spacing:.4px; }
+  .mode-card .d{ font-size:11.5px; line-height:1.45; }
+  .mode-card .go{ padding-top:6px; font-size:12px; font-weight:700; color:var(--gold); letter-spacing:.4px; }
   .mode-card:active{ background:var(--surface-2); }
   .mode-card .tag{ font-size:11px; font-weight:700; color:var(--gold); letter-spacing:.8px; margin-bottom:4px; }
   .mode-card .t{ font-size:20px; font-weight:900; color:var(--accent-dark); letter-spacing:-.3px; }
@@ -341,7 +358,7 @@
 
   /* Team mode */
   .name-list.no-handi .handi-col{ display:none; }
-  .name-stack{ display:flex; flex-direction:row; align-items:center; min-width:0; gap:6px; }
+  .name-stack{ display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; min-width:0; gap:3px 6px; }
   .name-stack .pname{ flex:0 1 auto; }
   .name-stack > :not(.pname){ flex:none; }
   .two-col .unit-input input[type=number]{ width:0; flex:1 1 0; min-width:0; }
@@ -352,12 +369,11 @@
     font-size:11px; font-weight:700; border-radius:3px; cursor:pointer;
   }
   .ball{ display:inline-flex; align-items:center; gap:5px; height:22px; padding:0 8px; border-radius:3px; font-size:11px; font-weight:700; white-space:nowrap; }
-  .ball.J::before{ content:''; width:8px; height:8px; border-radius:50%; background:currentColor; }
   .ball .ic{ width:16px; height:16px; margin-left:-3px; }
   .ball.R{ --eye:var(--red-bg); } .ball.B{ --eye:var(--blue-bg); }
   .ball.R{ background:var(--red-bg); color:var(--red); }
   .ball.B{ background:var(--blue-bg); color:var(--blue); }
-  .ball.J{ background:var(--gold); color:var(--accent-ink); }
+  .ball.J{ background:#111; color:#fff; box-shadow:0 0 0 1px rgba(255,255,255,.18); }
   .draw-actions{ display:flex; gap:6px; margin-top:4px; }
   .draw-actions .ghost-btn{ padding:9px; font-size:13px; }
   .team-box{ display:flex; flex-direction:column; gap:4px; }
@@ -383,6 +399,119 @@
   .tag-pill.B{ color:var(--blue); background:var(--blue-bg); }
   .tag-pill.T{ color:var(--muted); background:var(--surface-2); }
 
+  /* Money inputs: ▲▼ 5,000원 */
+  input[type=number]{ -moz-appearance:textfield; }
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
+  .money-spin{ display:flex; align-items:stretch; min-width:0; }
+  .money-spin > input[type=number]{ flex:1 1 0; width:0; min-width:0; }
+  .money-spin .spin{ display:flex; flex-direction:column; flex:none; width:28px; }
+  .money-spin .spin button{
+    flex:1; border:1px solid var(--line); border-left:none; background:var(--surface-2); color:var(--ink);
+    font-size:9px; line-height:1; padding:0; cursor:pointer; border-radius:0;
+  }
+  .money-spin .spin button + button{ border-top:none; }
+  .money-spin .spin button:active{ background:var(--sel); color:var(--sel-ink); }
+  .unit-input > .money-spin{ flex:none; width:44%; min-width:130px; }
+  .two-col .unit-input > .money-spin{ flex:1 1 0; width:0; min-width:0; }
+  .handi-col > .money-spin{ width:100%; }
+  .tb-list{ display:flex; flex-direction:column; gap:6px; }
+  .tb-row{ display:grid; grid-template-columns:64px minmax(0,1fr) auto; align-items:center; gap:6px; }
+  .tb-row .tb-name{ font-size:12px; font-weight:700; color:var(--ink); line-height:1.2; }
+  .tb-row .tb-name small{ display:block; font-size:10px; font-weight:500; color:var(--muted); }
+  .tb-row .money-spin input{ padding:8px 8px; font-size:14px; font-weight:700; text-align:right;
+    border:1px solid var(--line); background:var(--bg); color:var(--ink); border-radius:0; }
+  .tb-row .chip-row{ flex-wrap:nowrap; gap:4px; }
+  .tb-row .chip.small{ padding:6px 8px; font-size:12px; }
+  .three-col .money-spin{ width:100%; }
+
+  /* Achievements */
+  .ach{ display:inline-flex; align-items:center; gap:2px; flex:none; }
+  .ach-b{ display:inline-flex; }
+  .ach-ic{ width:22px; height:22px; display:block; }
+  .ach-b.big .ach-ic{ width:26px; height:26px; }
+  .hio{
+    font-family:'Dancing Script', 'Brush Script MT', cursive; font-weight:700; font-size:17px; line-height:1;
+    white-space:nowrap; padding:0 2px 2px;
+    background:var(--cele);
+    background-size:220% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 1px 0 rgba(120,80,10,.35)) drop-shadow(0 0 6px rgba(246,215,122,.55));
+    animation:shine 2.6s linear infinite;
+  }
+  .star-wrap{ position:relative; display:inline-flex; align-items:center; min-width:0; padding:0 6px; margin:0 -2px; }
+  .star-wrap::before{
+    content:''; position:absolute; inset:-6px -4px; border-radius:50%;
+    background:radial-gradient(closest-side, rgba(246,215,122,.45), rgba(246,215,122,0));
+    animation:glow 1.8s ease-in-out infinite; pointer-events:none;
+  }
+  .pname.celebrate{
+    position:relative; font-weight:900;
+    background:var(--cele);
+    filter:drop-shadow(0 0 3px rgba(242,201,76,.55));
+    background-size:220% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:shine 2.6s linear infinite;
+  }
+  .star-wrap .sp{ position:absolute; font-style:normal; color:#F2C94C; line-height:1; pointer-events:none;
+    text-shadow:0 0 4px rgba(255,220,120,.9); animation:twinkle 1.6s ease-in-out infinite; }
+  .star-wrap .s1{ top:-9px; left:-2px; font-size:10px; animation-delay:0s; }
+  .star-wrap .s2{ top:-11px; left:45%; font-size:8px; animation-delay:.3s; }
+  .star-wrap .s3{ top:-8px; right:-4px; font-size:11px; animation-delay:.6s; }
+  .star-wrap .s4{ bottom:-9px; left:15%; font-size:8px; animation-delay:.9s; }
+  .star-wrap .s5{ bottom:-8px; right:8%; font-size:10px; animation-delay:1.2s; }
+  .star-wrap .s6{ top:30%; right:-9px; font-size:7px; animation-delay:.45s; }
+  .ach-pill{
+    position:relative; display:inline-flex; align-items:center; gap:3px; height:24px; padding:0 9px 0 4px;
+    border-radius:12px; flex:none; animation:pillGlow 1.8s ease-in-out infinite;
+  }
+  .ach-pill .ach-ic{ width:20px; height:20px; }
+  .ach-pill .w{
+    font-family:'Dancing Script','Brush Script MT',cursive; font-weight:700; font-size:15px; line-height:1; white-space:nowrap;
+    background:var(--g); background-size:220% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:shine 2.4s linear infinite; padding-bottom:1px;
+  }
+  .ach-pill.birdie{ background:linear-gradient(90deg,rgba(142,91,214,.16),rgba(63,184,198,.2));
+    --g:linear-gradient(100deg,#6A2FB8,#2A9FB0 35%,#B46BFF 55%,#6A2FB8); --glow:rgba(142,91,214,.5); }
+  .ach-pill.eagle{ background:linear-gradient(90deg,rgba(224,160,48,.2),rgba(110,67,32,.16));
+    --g:linear-gradient(100deg,#6E3F0C,#D8951E 35%,#F7C65E 52%,#6E3F0C); --glow:rgba(224,160,48,.55); }
+  .ach-pill.alb{ background:linear-gradient(90deg,rgba(255,154,213,.24),rgba(154,205,255,.26),rgba(197,160,255,.24));
+    background-size:200% 100%;
+    --g:linear-gradient(100deg,#C7327F,#6A4BD6 28%,#1F7FC8 52%,#D8900F 74%,#C7327F); --glow:rgba(170,140,230,.6); }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .ach-pill.birdie{ --g:linear-gradient(100deg,#C79BFF,#6FE3EE 35%,#F0D8FF 55%,#C79BFF); }
+    :root:not([data-theme="light"]) .ach-pill.eagle{ --g:linear-gradient(100deg,#E0A33A,#FFD98A 40%,#FFF1CF 55%,#E0A33A); }
+    :root:not([data-theme="light"]) .ach-pill.alb{ --g:linear-gradient(100deg,#FF8CC6,#B9A2FF 28%,#8CCBFF 52%,#FFD27A 74%,#FF8CC6); }
+  }
+  :root[data-theme="dark"] .ach-pill.birdie{ --g:linear-gradient(100deg,#C79BFF,#6FE3EE 35%,#F0D8FF 55%,#C79BFF); }
+  :root[data-theme="dark"] .ach-pill.eagle{ --g:linear-gradient(100deg,#E0A33A,#FFD98A 40%,#FFF1CF 55%,#E0A33A); }
+  :root[data-theme="dark"] .ach-pill.alb{ --g:linear-gradient(100deg,#FF8CC6,#B9A2FF 28%,#8CCBFF 52%,#FFD27A 74%,#FF8CC6); }
+  .ach-pill.sheep{ background:linear-gradient(90deg,rgba(255,138,160,.22),rgba(190,190,205,.28));
+    --g:linear-gradient(100deg,#B4234A,#E0567A 40%,#FF9BB0 55%,#B4234A); --glow:rgba(224,86,122,.55); }
+  .ach-pill.sheep .w{ font-family:inherit; font-weight:900; font-size:13px; letter-spacing:-.2px; }
+  .ach-pill.sheep .ach-ic{ width:26px; height:26px; margin:-2px 0; animation:hop 1s ease-in-out infinite; transform-origin:50% 90%; }
+  .ach-pill.sheep::after{ content:'💦'; font-size:9px; top:-8px; right:-4px; text-shadow:none; animation:drip 1.2s ease-in infinite; }
+  .ach-pill.sheep::before{ content:none; }
+  @keyframes hop{ 0%,100%{ transform:translateY(0) rotate(0); } 30%{ transform:translateY(-3px) rotate(-8deg); } 60%{ transform:translateY(0) rotate(6deg); } }
+  @keyframes drip{ 0%{ opacity:0; transform:translateY(-2px); } 30%{ opacity:1; } 100%{ opacity:0; transform:translateY(5px); } }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .ach-pill.sheep{ --g:linear-gradient(100deg,#FF7A9C,#FFB3C4 40%,#FFE3EA 55%,#FF7A9C); }
+  }
+  :root[data-theme="dark"] .ach-pill.sheep{ --g:linear-gradient(100deg,#FF7A9C,#FFB3C4 40%,#FFE3EA 55%,#FF7A9C); }
+  .ach-pill::after{ content:'✦'; position:absolute; top:-7px; right:-3px; font-size:10px; color:#F2C94C;
+    text-shadow:0 0 4px rgba(255,220,120,.9); animation:twinkle 1.4s ease-in-out infinite; }
+  .ach-pill::before{ content:'✧'; position:absolute; bottom:-7px; left:3px; font-size:8px; color:#F2C94C;
+    text-shadow:0 0 4px rgba(255,220,120,.9); animation:twinkle 1.4s ease-in-out .7s infinite; }
+  .ach-pill.birdie .ach-ic{ animation:flutter .8s ease-in-out infinite; }
+  .ach-pill.eagle .ach-ic{ animation:soar 1.6s ease-in-out infinite; }
+  .ach-pill.alb .ach-ic{ animation:floaty 1.8s ease-in-out infinite; }
+  @keyframes pillGlow{ 0%,100%{ box-shadow:0 0 0 1px var(--glow), 0 0 3px 0 var(--glow); } 50%{ box-shadow:0 0 0 1px var(--glow), 0 0 12px 2px var(--glow); } }
+  @keyframes flutter{ 0%,100%{ transform:scaleX(1); } 50%{ transform:scaleX(.5) translateY(-1px); } }
+  @keyframes soar{ 0%,100%{ transform:translateY(0) rotate(-5deg); } 50%{ transform:translateY(-2px) rotate(5deg); } }
+  @keyframes floaty{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-2px); } }
+  .score-row .name-part{ flex-wrap:wrap; row-gap:4px; }
+  @keyframes shine{ to{ background-position:-220% 0; } }
+  @keyframes twinkle{ 0%,100%{ opacity:.25; transform:scale(.6) rotate(0deg); } 50%{ opacity:1; transform:scale(1.15) rotate(20deg); } }
+  @keyframes glow{ 0%,100%{ opacity:.55; } 50%{ opacity:1; } }
+  @media (prefers-reduced-motion: reduce){ .hio, .pname.celebrate, .star-wrap .sp, .star-wrap::before, .ach-pill, .ach-pill *, .ach-pill::before, .ach-pill::after{ animation:none; } }
+
   [hidden]{ display:none !important; }
 </style>
 </head>
@@ -392,7 +521,7 @@
   <header class="top">
     <button class="icon-btn" id="backBtn" title="뒤로" aria-label="뒤로" hidden>←</button>
     <div class="brand">
-      <h1>라운딩 정산</h1>
+      <h1>내기골프계산기</h1>
       <span class="sub">스트로크 내기 자동 계산</span>
     </div>
     <button class="icon-btn" id="historyBtn" title="지난 라운딩" aria-label="지난 라운딩">☰</button>
@@ -406,14 +535,14 @@
         <div class="art"><svg class="ic g" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M11 3h2v22h-2z"/><path d="M13 3.5 25 8.2 13 13z"/><ellipse cx="12" cy="27" rx="9" ry="2.6" opacity=".35"/><circle cx="19.5" cy="26.2" r="1.3"/></svg></div>
         <div class="tag">STROKE</div>
         <div class="t">스트로크</div>
-        <div class="d">타수 차이 × 1타당 금액<br>1:1 자동 정산<br>배판 · 니어 · 버디 · 롱기</div>
+        <div class="d">타수 차이 1:1 자동 정산<br>배판 · 니어 · 버디 · 롱기</div>
         <div class="go">시작하기 ›</div>
       </button>
       <button class="mode-card" data-mode="team">
         <div class="art"><svg class="ic r" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M21 8.5c2.4 0 4 1.6 4.3 3.4l3.2 1-3.3 1c-.6 2.6-2.6 4.6-5.3 5.2l-4.6 2.4 1.6-4.3c-.5-.8-.8-1.8-.8-2.8 0-3.4 2.3-5.9 4.9-5.9z"/><path d="M20.4 8.7C19.3 6.2 19.6 3.9 21.2 2c-.3 2.2.1 4.2 1.3 6.2zM19 9.3C17.1 7.5 16.2 5.3 16.5 3c.7 2 1.9 3.7 3.6 5z"/><path d="M17.6 14.4C13 13.6 9.2 10.3 7.6 5.5c2.6 2.7 5.6 4.2 8.9 4.5-1.4-1.1-2.3-2.6-2.6-4.3 1.6 1.7 3.5 2.8 5.7 3.1z"/><path d="M16.4 19.2C12.3 22 8.2 22.6 3 21.6c3.6 1.9 7.2 2.1 10.6 1.3-3.2 2.4-6.8 4.6-11.4 5.6 4.6.4 8.8-1 12.1-3.4-1 2.4-2.9 4.4-5.1 5.9 4.2-.6 7.3-3.4 8.6-7.3z"/><circle class="eye" cx="22.3" cy="11.6" r="1"/></svg><svg class="ic b" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M5 31C5 23 8 15 14 10.5 16 9 18.5 8.6 21 9.2L29.5 12.4C30.2 12.7 30.1 13.7 29.3 13.8L21.5 15 28 17.6C28.7 17.9 28.5 18.9 27.7 18.9L19.5 19C17 21.5 14.5 24 13.5 31Z"/><path d="M15.5 10C12.5 7.5 10 5 8 2.5 11.5 3.8 14.5 5.8 17.5 8.8Z"/><path d="M13 12C10 10.5 7 9.5 4.5 9.5 7.5 8.3 10.8 8.6 14 10.3Z"/><path d="M24 15.3C26 17 25 21 21.5 22 23.5 20.5 23.8 18 22.8 16Z"/><path d="M9 17 5.5 16.5 8.2 19.5ZM7.2 22 3.8 22.3 6.8 24.6ZM6.3 27 3 27.8 6 29.6Z"/><circle class="eye" cx="19.6" cy="11.9" r="1.1"/></svg></div>
         <div class="tag">TEAM · 뽑기</div>
         <div class="t">팀전</div>
-        <div class="d">불사조 vs 푸른용<br>매 홀 2:2 뽑기 · 팀 합산<br>선입금 판돈 · 조커</div>
+        <div class="d">불사조 vs 푸른용<br>2:2 뽑기 · 판돈 · 조커</div>
         <div class="go">시작하기 ›</div>
       </button>
     </div>
@@ -475,34 +604,37 @@
       </div>
       <div class="field-hint" id="potHint" hidden style="margin-top:6px;"></div>
       <div class="field" id="teamBirdieField" hidden>
-        <label class="field-label">버디 축하금</label>
-        <div class="unit-input">
-          <input type="number" id="teamBirdieInput" inputmode="numeric" value="0" min="0" step="500">
-          <span>원</span>
-          <div class="chip-row" id="birdieModeChips" style="margin-left:auto;">
-            <button class="chip small" data-bmode="pot">총금액차감</button>
-            <button class="chip small" data-bmode="separate">별도계산</button>
-          </div>
-        </div>
-        <div class="field-hint" id="birdieHint"></div>
+        <label class="field-label">축하금</label>
+        <div id="teamBonusList" class="tb-list"></div>
+        <div class="field-hint">총금액차감: 기록한 사람이 판돈에서 가져감 · 별도계산: 나머지 인원이 각자 지급.</div>
       </div>
     </div>
 
     <div class="card" id="bonusCard" style="margin-top:8px;">
       <div class="field" style="margin-top:0;">
-        <label class="field-label">니어 · 버디 · 롱기 상금</label>
+        <label class="field-label">축하금 (1인당 받는 금액)</label>
         <div class="three-col">
-          <div>
-            <label>니어</label>
-            <input type="number" class="text-input" id="bonusNear" value="0" min="0" step="500">
-          </div>
           <div>
             <label>버디</label>
             <input type="number" class="text-input" id="bonusBirdie" value="0" min="0" step="500">
           </div>
           <div>
+            <label>니어</label>
+            <input type="number" class="text-input" id="bonusNear" value="0" min="0" step="500">
+          </div>
+          <div>
             <label>롱기</label>
             <input type="number" class="text-input" id="bonusLong" value="0" min="0" step="500">
+          </div>
+        </div>
+        <div class="two-col" style="margin-top:6px;">
+          <div>
+            <label class="mini-label">이글</label>
+            <input type="number" class="text-input" id="bonusEagle" value="0" min="0" step="500">
+          </div>
+          <div>
+            <label class="mini-label">홀인원(알바트로스)</label>
+            <input type="number" class="text-input" id="bonusHio" value="0" min="0" step="500">
           </div>
         </div>
       </div>
@@ -511,11 +643,14 @@
     <div class="card" id="jokerCard" style="margin-top:8px;" hidden>
       <div class="field" style="margin-top:0;">
         <label class="field-label">조커 타수</label>
-        <div class="field-hint">뽑기: 빨강 2 · 파랑 2 · 조커 1. 조커를 뽑은 사람은 실제 타수 대신 이 타수로 계산되고, 남은 색 팀에 합류해요.</div>
         <div class="stepper-row">
           <button class="stepper-btn" id="jokerMinus" aria-label="조커 타수 줄이기">−</button>
           <div class="stepper-val joker-val" id="jokerVal">파</div>
           <button class="stepper-btn" id="jokerPlus" aria-label="조커 타수 늘리기">+</button>
+          <div class="chip-row" id="jokerTypeChips" style="margin-left:auto;">
+            <button class="chip small" data-jtype="strokes">타수</button>
+            <button class="chip small" data-jtype="score">스코어</button>
+          </div>
         </div>
       </div>
     </div>
@@ -526,8 +661,9 @@
         <div class="chip-row" id="baepanCondChips">
           <button class="chip" data-cond="birdie">버디</button>
           <button class="chip" data-cond="tie3">동타 3명</button>
-          <button class="chip" data-cond="triple">트리플</button>
+          <button class="chip" data-cond="triple">트리플 이상</button>
           <button class="chip" data-cond="ob">OB</button>
+          <button class="chip" data-cond="double3">더블(파3)</button>
         </div>
       </div>
       <div class="field">
@@ -668,9 +804,13 @@
     mode: 'stroke',          // 'stroke' | 'team'
     deposit: 10000,          // 팀전: 1인 선입금
     holeAmount: 2000,        // 팀전: 홀당 금액
-    jokerRel: 0,             // 팀전: 조커 타수 (파 대비)
-    teamBirdie: 0,           // 팀전: 버디 축하금
-    teamBirdieMode: 'pot',   // 팀전: 'pot'(총금액차감) | 'separate'(별도계산)
+    jokerRel: 0,             // 팀전: 조커 스코어 (파 대비)
+    jokerType: 'score',      // 팀전: 'score'(파·보기) | 'strokes'(1·2·3·4타)
+    jokerStrokes: 4,         // 팀전: 조커 타수 (절대)
+    teamBonus: {             // 팀전 축하금: amt(원), mode 'pot'(총금액차감) | 'separate'(별도계산)
+      birdie:{amt:0, mode:'pot'}, near:{amt:0, mode:'pot'}, long:{amt:0, mode:'pot'},
+      eagle:{amt:0, mode:'pot'}, hio:{amt:0, mode:'pot'}
+    },
     draws: {},               // 팀전: holeNum -> ['R'|'B'|'J'|null per player]
     roundDate: todayStr(),
     courseName: '',
@@ -678,7 +818,7 @@
     names: ['나','친구1','친구2','친구3'],
     handicaps: [0,0,0,0],
     unit: 1000,
-    bonuses: { near:0, birdie:0, long:0 },
+    bonuses: { near:0, birdie:0, long:0, eagle:0, hio:0 },
     holeCount: 18,
     currentHole: 1,
     pars: {},              // holeNum -> 3|4|5
@@ -686,7 +826,7 @@
     confirmedHoles: {},
     manualOB: {},            // holeNum -> bool
     nextHoleDoubleFlag: {},   // holeNum -> bool (다음홀 배판 예약)
-    baepan: { birdie:false, tie3:false, triple:false, ob:false, timing:'current' },
+    baepan: { birdie:false, tie3:false, triple:false, ob:false, double3:false, timing:'current' },
     nearWinner: {},           // holeNum -> playerIdx | null
     longWinner: {},           // holeNum -> playerIdx | null
     lastResultTotals: null,
@@ -751,6 +891,8 @@
   $('bonusNear').addEventListener('input', function(e){ state.bonuses.near = parseInt(e.target.value,10)||0; });
   $('bonusBirdie').addEventListener('input', function(e){ state.bonuses.birdie = parseInt(e.target.value,10)||0; });
   $('bonusLong').addEventListener('input', function(e){ state.bonuses.long = parseInt(e.target.value,10)||0; });
+  $('bonusEagle').addEventListener('input', function(e){ state.bonuses.eagle = parseInt(e.target.value,10)||0; });
+  $('bonusHio').addEventListener('input', function(e){ state.bonuses.hio = parseInt(e.target.value,10)||0; });
 
   function renderNameList(){
     var list = $('nameList');
@@ -782,6 +924,7 @@
         handiInput.addEventListener('input', function(e){ state.handicaps[i] = parseInt(e.target.value,10)||0; });
         handiCol.appendChild(handiLabel);
         handiCol.appendChild(handiInput);
+        enhanceMoney(handiInput, true);
 
         row.appendChild(dot);
         row.appendChild(input);
@@ -842,6 +985,34 @@
   }
   updateBaepanChips();
 
+  // ---------- MONEY SPIN (▲▼ 5,000원) ----------
+  var MONEY_STEP = 5000;
+  function enhanceMoney(input, allowNegative){
+    if(!input || input.dataset.spin) return;
+    input.dataset.spin = '1';
+    input.step = 'any';
+    var wrap = document.createElement('div'); wrap.className = 'money-spin';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    var spin = document.createElement('div'); spin.className = 'spin';
+    [['▲',1,'증가'],['▼',-1,'감소']].forEach(function(d){
+      var b = document.createElement('button');
+      b.type = 'button'; b.textContent = d[0]; b.setAttribute('aria-label', '5,000원 '+d[2]);
+      b.addEventListener('click', function(){
+        var cur = parseInt(input.value,10) || 0;
+        var next = cur + d[1]*MONEY_STEP;
+        if(!allowNegative && next<0) next = 0;
+        input.value = next;
+        input.dispatchEvent(new Event('input', {bubbles:true}));
+      });
+      spin.appendChild(b);
+    });
+    wrap.appendChild(spin);
+  }
+  ['unitInput','bonusNear','bonusBirdie','bonusLong','bonusEagle','bonusHio','depositInput','holeAmtInput'].forEach(function(id){
+    enhanceMoney($(id), false);
+  });
+
   // ---------- MODE ----------
   function updateBrandSub(screen){
     var sub = (screen==='mode') ? '골프 내기 자동 계산'
@@ -875,8 +1046,7 @@
     $('teamMoneyRow').hidden = !team;
     $('potHint').hidden = !team;
     $('teamBirdieField').hidden = !team;
-    $('teamBirdieInput').value = state.teamBirdie||0;
-    updateBirdieMode();
+    renderTeamBonusList();
     $('bonusCard').hidden = team;
     $('baepanCard').hidden = team;
     $('jokerCard').hidden = !team;
@@ -898,31 +1068,85 @@
   var REL_LABEL = {'-3':'알바트로스','-2':'이글','-1':'버디','0':'파','1':'보기','2':'더블','3':'트리플'};
   function relLabel(r){ return REL_LABEL[String(r)] || ((r>0?'+':'')+r); }
   function updateJokerVal(){
+    document.querySelectorAll('#jokerTypeChips .chip').forEach(function(chip){
+      chip.setAttribute('aria-pressed', String(chip.dataset.jtype===state.jokerType));
+    });
+    if(state.jokerType==='strokes'){ $('jokerVal').textContent = state.jokerStrokes+'타'; return; }
     var r = state.jokerRel;
     $('jokerVal').textContent = relLabel(r) + (r!==0 && REL_LABEL[String(r)] ? ' ('+fmtRel(r)+')' : '');
   }
   $('depositInput').addEventListener('input', function(e){ state.deposit = parseInt(e.target.value,10)||0; updatePotHint(); });
   $('holeAmtInput').addEventListener('input', function(e){ state.holeAmount = parseInt(e.target.value,10)||0; updatePotHint(); });
-  $('teamBirdieInput').addEventListener('input', function(e){ state.teamBirdie = parseInt(e.target.value,10)||0; });
-  document.querySelectorAll('#birdieModeChips .chip').forEach(function(chip){
-    chip.addEventListener('click', function(){ state.teamBirdieMode = chip.dataset.bmode; updateBirdieMode(); });
-  });
-  function updateBirdieMode(){
-    var m = state.teamBirdieMode==='separate' ? 'separate' : 'pot';
-    document.querySelectorAll('#birdieModeChips .chip').forEach(function(chip){
-      chip.setAttribute('aria-pressed', String(chip.dataset.bmode===m));
+  var TEAM_BONUS_KEYS = [
+    ['birdie','버디',''], ['near','니어','파3'], ['long','롱기','파5'], ['eagle','이글',''], ['hio','홀인원','(알바트로스)']
+  ];
+  function normTeamBonus(){
+    if(!state.teamBonus) state.teamBonus = {};
+    TEAM_BONUS_KEYS.forEach(function(k){
+      if(!state.teamBonus[k[0]]) state.teamBonus[k[0]] = {amt:0, mode:'pot'};
     });
-    $('birdieHint').textContent = m==='pot'
-      ? '총금액차감: 버디(실제 타수 기준)한 사람이 판돈에서 이 금액을 가져가요. 판돈이 부족하면 남은 만큼만.'
-      : '별도계산: 버디(실제 타수 기준)한 사람에게 나머지 인원이 각자 이 금액을 따로 지급해요. 판돈과 무관.';
+    // 이전 버전(버디만) 데이터 호환
+    if(state.teamBirdie!=null){
+      state.teamBonus.birdie = {amt:state.teamBirdie||0, mode:state.teamBirdieMode==='separate'?'separate':'pot'};
+      delete state.teamBirdie; delete state.teamBirdieMode;
+    }
   }
-  $('jokerMinus').addEventListener('click', function(){ if(state.jokerRel>-3){ state.jokerRel--; updateJokerVal(); } });
-  $('jokerPlus').addEventListener('click', function(){ if(state.jokerRel<5){ state.jokerRel++; updateJokerVal(); } });
+  function renderTeamBonusList(){
+    normTeamBonus();
+    var box = $('teamBonusList');
+    box.innerHTML = '';
+    TEAM_BONUS_KEYS.forEach(function(k){
+      var key = k[0], cfg = state.teamBonus[key];
+      var row = document.createElement('div'); row.className = 'tb-row';
+      var nm = document.createElement('div'); nm.className = 'tb-name';
+      nm.innerHTML = k[1] + (k[2] ? '<small>'+k[2]+'</small>' : '');
+      var input = document.createElement('input');
+      input.type = 'number'; input.inputMode = 'numeric'; input.min = '0'; input.value = cfg.amt||0;
+      input.setAttribute('aria-label', k[1]+' 축하금');
+      input.addEventListener('input', function(e){ cfg.amt = parseInt(e.target.value,10)||0; });
+      var holder = document.createElement('div'); holder.appendChild(input);
+      var chips = document.createElement('div'); chips.className = 'chip-row';
+      [['pot','총금액차감'],['separate','별도계산']].forEach(function(m){
+        var c = document.createElement('button');
+        c.className = 'chip small'; c.textContent = m[1];
+        c.setAttribute('aria-pressed', String(cfg.mode===m[0]));
+        c.addEventListener('click', function(){
+          cfg.mode = m[0];
+          chips.querySelectorAll('.chip').forEach(function(x){ x.setAttribute('aria-pressed', String(x===c)); });
+        });
+        chips.appendChild(c);
+      });
+      row.appendChild(nm); row.appendChild(holder); row.appendChild(chips);
+      box.appendChild(row);
+      enhanceMoney(input, false);
+      // enhanceMoney wraps the input; use the wrapper as the grid cell
+      holder.replaceWith(input.parentNode);
+    });
+  }
+  $('jokerMinus').addEventListener('click', function(){
+    if(state.jokerType==='strokes'){ if(state.jokerStrokes>1) state.jokerStrokes--; }
+    else if(state.jokerRel>-3){ state.jokerRel--; }
+    updateJokerVal();
+  });
+  $('jokerPlus').addEventListener('click', function(){
+    if(state.jokerType==='strokes'){ if(state.jokerStrokes<12) state.jokerStrokes++; }
+    else if(state.jokerRel<5){ state.jokerRel++; }
+    updateJokerVal();
+  });
+  document.querySelectorAll('#jokerTypeChips .chip').forEach(function(chip){
+    chip.addEventListener('click', function(){ state.jokerType = chip.dataset.jtype; updateJokerVal(); });
+  });
+  function jokerRelFor(h){
+    return state.jokerType==='strokes' ? state.jokerStrokes - (state.pars[h]||4) : state.jokerRel;
+  }
+  function jokerLabel(){
+    return state.jokerType==='strokes' ? state.jokerStrokes+'타' : relLabel(state.jokerRel);
+  }
 
   // ---------- TEAM LOGIC ----------
   var BALLS = ['R','R','B','B','J'];
   var BALL_LABEL = {R:'불사조', B:'푸른용', J:'조커'};
-  var ICON = { R:'<svg class="ic" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M21 8.5c2.4 0 4 1.6 4.3 3.4l3.2 1-3.3 1c-.6 2.6-2.6 4.6-5.3 5.2l-4.6 2.4 1.6-4.3c-.5-.8-.8-1.8-.8-2.8 0-3.4 2.3-5.9 4.9-5.9z"/><path d="M20.4 8.7C19.3 6.2 19.6 3.9 21.2 2c-.3 2.2.1 4.2 1.3 6.2zM19 9.3C17.1 7.5 16.2 5.3 16.5 3c.7 2 1.9 3.7 3.6 5z"/><path d="M17.6 14.4C13 13.6 9.2 10.3 7.6 5.5c2.6 2.7 5.6 4.2 8.9 4.5-1.4-1.1-2.3-2.6-2.6-4.3 1.6 1.7 3.5 2.8 5.7 3.1z"/><path d="M16.4 19.2C12.3 22 8.2 22.6 3 21.6c3.6 1.9 7.2 2.1 10.6 1.3-3.2 2.4-6.8 4.6-11.4 5.6 4.6.4 8.8-1 12.1-3.4-1 2.4-2.9 4.4-5.1 5.9 4.2-.6 7.3-3.4 8.6-7.3z"/><circle class="eye" cx="22.3" cy="11.6" r="1"/></svg>', B:'<svg class="ic" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M5 31C5 23 8 15 14 10.5 16 9 18.5 8.6 21 9.2L29.5 12.4C30.2 12.7 30.1 13.7 29.3 13.8L21.5 15 28 17.6C28.7 17.9 28.5 18.9 27.7 18.9L19.5 19C17 21.5 14.5 24 13.5 31Z"/><path d="M15.5 10C12.5 7.5 10 5 8 2.5 11.5 3.8 14.5 5.8 17.5 8.8Z"/><path d="M13 12C10 10.5 7 9.5 4.5 9.5 7.5 8.3 10.8 8.6 14 10.3Z"/><path d="M24 15.3C26 17 25 21 21.5 22 23.5 20.5 23.8 18 22.8 16Z"/><path d="M9 17 5.5 16.5 8.2 19.5ZM7.2 22 3.8 22.3 6.8 24.6ZM6.3 27 3 27.8 6 29.6Z"/><circle class="eye" cx="19.6" cy="11.9" r="1.1"/></svg>' };
+  var ICON = { R:'<svg class="ic" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M21 8.5c2.4 0 4 1.6 4.3 3.4l3.2 1-3.3 1c-.6 2.6-2.6 4.6-5.3 5.2l-4.6 2.4 1.6-4.3c-.5-.8-.8-1.8-.8-2.8 0-3.4 2.3-5.9 4.9-5.9z"/><path d="M20.4 8.7C19.3 6.2 19.6 3.9 21.2 2c-.3 2.2.1 4.2 1.3 6.2zM19 9.3C17.1 7.5 16.2 5.3 16.5 3c.7 2 1.9 3.7 3.6 5z"/><path d="M17.6 14.4C13 13.6 9.2 10.3 7.6 5.5c2.6 2.7 5.6 4.2 8.9 4.5-1.4-1.1-2.3-2.6-2.6-4.3 1.6 1.7 3.5 2.8 5.7 3.1z"/><path d="M16.4 19.2C12.3 22 8.2 22.6 3 21.6c3.6 1.9 7.2 2.1 10.6 1.3-3.2 2.4-6.8 4.6-11.4 5.6 4.6.4 8.8-1 12.1-3.4-1 2.4-2.9 4.4-5.1 5.9 4.2-.6 7.3-3.4 8.6-7.3z"/><circle class="eye" cx="22.3" cy="11.6" r="1"/></svg>', B:'<svg class="ic" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M5 31C5 23 8 15 14 10.5 16 9 18.5 8.6 21 9.2L29.5 12.4C30.2 12.7 30.1 13.7 29.3 13.8L21.5 15 28 17.6C28.7 17.9 28.5 18.9 27.7 18.9L19.5 19C17 21.5 14.5 24 13.5 31Z"/><path d="M15.5 10C12.5 7.5 10 5 8 2.5 11.5 3.8 14.5 5.8 17.5 8.8Z"/><path d="M13 12C10 10.5 7 9.5 4.5 9.5 7.5 8.3 10.8 8.6 14 10.3Z"/><path d="M24 15.3C26 17 25 21 21.5 22 23.5 20.5 23.8 18 22.8 16Z"/><path d="M9 17 5.5 16.5 8.2 19.5ZM7.2 22 3.8 22.3 6.8 24.6ZM6.3 27 3 27.8 6 29.6Z"/><circle class="eye" cx="19.6" cy="11.9" r="1.1"/></svg>' , J:'<svg class="ic" viewBox="0 0 32 32" aria-hidden="true"><g fill="#fff"><path d="M16 13.5c-2.4-3.2-5.6-5-9.6-5.2 2 1.3 3.2 3.2 3.4 5.4L9 14.8C11.2 13.6 13.6 13.2 16 13.5zM16 13.5c2.4-3.2 5.6-5 9.6-5.2-2 1.3-3.2 3.2-3.4 5.4l1.4 1.1C21.4 13.6 19 13.2 16 13.5zM16 13.5c-1-3.4-.6-6.8 1.2-10-2.6 1.6-4.2 4-4.6 7.2z"/><circle cx="6" cy="8" r="1.8"/><circle cx="26" cy="8" r="1.8"/><circle cx="17.6" cy="3" r="1.8"/><path d="M9.5 15.2c4.2-1.4 8.8-1.4 13 0 .3 1 .5 2.1.5 3.3 0 4.6-3.1 8.5-7 8.5s-7-3.9-7-8.5c0-1.2.2-2.3.5-3.3z"/><path d="M8 27.5c2.3 1.4 5.1 2.2 8 2.2s5.7-.8 8-2.2l-1.8-1.6c-1.8 1.1-3.9 1.7-6.2 1.7s-4.4-.6-6.2-1.7z"/></g><g fill="#111"><path d="M12 18.6c.7-.8 1.9-.8 2.6 0-.8.3-1.8.3-2.6 0zM17.4 18.6c.7-.8 1.9-.8 2.6 0-.8.3-1.8.3-2.6 0z"/><path d="M12.4 21.8c2.2 1.9 5 1.9 7.2 0-.3 2-1.8 3.3-3.6 3.3s-3.3-1.3-3.6-3.3z"/></g></svg>' };
   function getDraw(h){
     if(!state.draws[h]) state.draws[h] = new Array(state.playerCount).fill(null);
     return state.draws[h];
@@ -950,7 +1174,7 @@
     if(J!=null){ if(R.length<B.length) R.push(J); else B.push(J); }
     return { valid: all && R.length===2 && B.length===2, R:R, B:B, joker:J };
   }
-  function effRel(h,i){ return getDraw(h)[i]==='J' ? state.jokerRel : state.scores[h][i]; }
+  function effRel(h,i){ return getDraw(h)[i]==='J' ? jokerRelFor(h) : state.scores[h][i]; }
   // Walks holes in order: confirmed holes plus (optionally) the hole being previewed.
   function teamLedger(previewHole){
     var n = state.playerCount;
@@ -959,23 +1183,14 @@
     for(var h=1; h<=state.holeCount; h++){
       if(!state.confirmedHoles[h] && h!==previewHole) continue;
       var t = teamsForHole(h), par = state.pars[h]||4;
-      var r = { teams:t, carryIn:carry, stake:state.holeAmount+carry, potBefore:pot, winner:null, paid:0, per:0, birdieNet:new Array(n).fill(0) };
-      var bi = [];
-      if(state.teamBirdie>0){
-        for(var q0=0;q0<n;q0++){ if(state.scores[h][q0]<=-1) bi.push(q0); }
-        r.birdieIdx = bi;
-        r.birdieAmt = new Array(n).fill(0);
-      }
-      if(state.teamBirdie>0 && state.teamBirdieMode==='separate'){
-        bi = [];
-        for(var q=0;q<n;q++){ if(state.scores[h][q]<=-1) bi.push(q); }
-        if(bi.length>0 && bi.length<n){
-          bi.forEach(function(w){
-            for(var j=0;j<n;j++){ if(bi.indexOf(j)===-1){ r.birdieNet[w]+=state.teamBirdie; r.birdieNet[j]-=state.teamBirdie; } }
-          });
-        }
-        for(var q2=0;q2<n;q2++){ birdie[q2]+=r.birdieNet[q2]; r.birdieAmt[q2]=Math.max(0,r.birdieNet[q2]); }
-      }
+      var r = { teams:t, carryIn:carry, stake:state.holeAmount+carry, potBefore:pot, winner:null, paid:0, per:0, awards:[] };
+      var awardList = teamAwardsForHole(h);
+      // 별도계산 축하금: 나머지 인원이 각자 지급
+      awardList.forEach(function(aw){
+        if(aw.mode!=='separate') return;
+        for(var j=0;j<n;j++){ if(j!==aw.i){ birdie[aw.i]+=aw.amt; birdie[j]-=aw.amt; } }
+        r.awards.push({i:aw.i, kind:aw.kind, mode:'separate', got:aw.amt*(n-1)});
+      });
       if(t.valid){
         r.sumR = t.R.reduce(function(a,i){ return a+effRel(h,i); },0);
         r.sumB = t.B.reduce(function(a,i){ return a+effRel(h,i); },0);
@@ -988,16 +1203,30 @@
           t[r.winner].forEach(function(i){ won[i]+=per; });
         }
       }
-      if(state.teamBirdie>0 && state.teamBirdieMode!=='separate' && bi.length){
-        bi.forEach(function(w){
-          var take = Math.min(state.teamBirdie, pot);
-          pot -= take; won[w] += take; r.birdieAmt[w] = take;
-        });
-      }
+      // 총금액차감 축하금: 판돈에서 가져감
+      awardList.forEach(function(aw){
+        if(aw.mode==='separate') return;
+        var take = Math.min(aw.amt, pot);
+        pot -= take; won[aw.i] += take;
+        r.awards.push({i:aw.i, kind:aw.kind, mode:'pot', got:take});
+      });
       r.potAfter = pot; r.carryOut = carry;
       results[h] = r;
     }
     return { pot:pot, carry:carry, won:won, birdie:birdie, results:results };
+  }
+  function teamAwardsForHole(h){
+    normTeamBonus();
+    var n = state.playerCount, par = state.pars[h]||4, list = [];
+    for(var i=0;i<n;i++){
+      var tier = bonusTier(h,i);
+      if(tier && state.teamBonus[tier].amt>0) list.push({i:i, kind:tier, amt:state.teamBonus[tier].amt, mode:state.teamBonus[tier].mode});
+    }
+    if(par===3 && state.nearWinner[h]!=null && state.teamBonus.near.amt>0)
+      list.push({i:state.nearWinner[h], kind:'near', amt:state.teamBonus.near.amt, mode:state.teamBonus.near.mode});
+    if(par===5 && state.longWinner[h]!=null && state.teamBonus.long.amt>0)
+      list.push({i:state.longWinner[h], kind:'long', amt:state.teamBonus.long.amt, mode:state.teamBonus.long.mode});
+    return list;
   }
   function teamFinal(){
     var n = state.playerCount, L = teamLedger(null);
@@ -1040,16 +1269,18 @@
   // state.scores[h][i] is stored as strokes relative to par (0 = par, -1 = birdie, +3 = triple bogey, ...)
   function autoConditionsForHole(h){
     var rel = state.scores[h];
-    var birdie=false, triple=false;
+    var birdie=false, triple=false, double3=false;
+    var par = state.pars[h]||4;
     rel.forEach(function(s){
       if(s<=-1) birdie=true;
       if(s>=3) triple=true;
+      if(par===3 && s>=2) double3=true;
     });
     var counts={};
     rel.forEach(function(s){ counts[s]=(counts[s]||0)+1; });
     var tie3=false;
     Object.keys(counts).forEach(function(k){ if(counts[k]>=3) tie3=true; });
-    return {birdie:birdie, triple:triple, tie3:tie3};
+    return {birdie:birdie, triple:triple, tie3:tie3, double3:double3};
   }
 
   function conditionsTriggered(h){
@@ -1058,6 +1289,7 @@
     if(state.baepan.birdie && auto.birdie) trig=true;
     if(state.baepan.tie3 && auto.tie3) trig=true;
     if(state.baepan.triple && auto.triple) trig=true;
+    if(state.baepan.double3 && auto.double3) trig=true;
     if(state.baepan.ob && state.manualOB[h]) trig=true;
     return trig;
   }
@@ -1069,7 +1301,7 @@
   }
 
   var anyBaepanEnabled = function(){
-    return state.baepan.birdie || state.baepan.tie3 || state.baepan.triple || state.baepan.ob;
+    return state.baepan.birdie || state.baepan.tie3 || state.baepan.triple || state.baepan.ob || state.baepan.double3;
   };
 
   function pairwiseHoleDeltas(h){
@@ -1093,25 +1325,19 @@
     var net = new Array(n).fill(0);
     var rel = state.scores[h];
 
-    if(state.bonuses.birdie>0){
-      var birdieIdx = [];
-      for(var i=0;i<n;i++){ if(rel[i]<=-1) birdieIdx.push(i); }
-      if(birdieIdx.length>0 && birdieIdx.length<n){
-        birdieIdx.forEach(function(bi){
-          for(var j=0;j<n;j++){
-            if(birdieIdx.indexOf(j)===-1){
-              net[bi]+=state.bonuses.birdie;
-              net[j]-=state.bonuses.birdie;
-            }
-          }
-        });
+    // 버디·이글·홀인원(알바트로스): 가장 높은 기록 하나만, 나머지 인원이 각자 지급
+    for(var i=0;i<n;i++){
+      var tier = bonusTier(h,i);
+      var amt = tier ? (state.bonuses[tier]||0) : 0;
+      if(amt>0){
+        for(var j=0;j<n;j++){ if(j!==i){ net[i]+=amt; net[j]-=amt; } }
       }
     }
-    if(state.bonuses.near>0 && state.nearWinner[h]!=null){
+    if(state.bonuses.near>0 && state.nearWinner[h]!=null && (state.pars[h]||4)===3){
       var w = state.nearWinner[h];
       for(var j2=0;j2<n;j2++){ if(j2!==w){ net[w]+=state.bonuses.near; net[j2]-=state.bonuses.near; } }
     }
-    if(state.bonuses.long>0 && state.longWinner[h]!=null){
+    if(state.bonuses.long>0 && state.longWinner[h]!=null && (state.pars[h]||4)===5){
       var w2 = state.longWinner[h];
       for(var j3=0;j3<n;j3++){ if(j3!==w2){ net[w2]+=state.bonuses.long; net[j3]-=state.bonuses.long; } }
     }
@@ -1154,6 +1380,54 @@
     $('roundMetaSummary').innerHTML = text;
   }
 
+  // ---------- ACHIEVEMENTS (나비·독수리·유니콘·홀인원·양) ----------
+  var ACH_ICON = {"butterfly": "<svg class=\"ach-ic\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><path fill=\"#8E5BD6\" d=\"M15 14C12 7 6 4 3.5 6.5 1.5 8.6 3.8 13.5 9 15.2 5 16.4 4 20.5 6.3 22.6 9 25 13.2 21.5 15 17.5Z\"/><path fill=\"#8E5BD6\" d=\"M17 14C20 7 26 4 28.5 6.5 30.5 8.6 28.2 13.5 23 15.2 27 16.4 28 20.5 25.7 22.6 23 25 18.8 21.5 17 17.5Z\"/><path fill=\"#3FB8C6\" d=\"M6.5 8.5c2-.6 4.5 1.4 5.3 4-2.4.2-5.2-1.5-5.3-4zM25.5 8.5c-2-.6-4.5 1.4-5.3 4 2.4.2 5.2-1.5 5.3-4z\"/><circle cx=\"8.3\" cy=\"19.5\" r=\"1.4\" fill=\"#F2B84B\"/><circle cx=\"23.7\" cy=\"19.5\" r=\"1.4\" fill=\"#F2B84B\"/><rect x=\"15\" y=\"10.5\" width=\"2\" height=\"14\" rx=\"1\" fill=\"#3A2A4A\"/><path d=\"M15.6 11C14.6 8.2 13.2 6.3 11.2 5.3M16.4 11C17.4 8.2 18.8 6.3 20.8 5.3\" stroke=\"#3A2A4A\" stroke-width=\"1.1\" fill=\"none\" stroke-linecap=\"round\"/></svg>", "eagle": "<svg class=\"ach-ic\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><path fill=\"#6E4320\" d=\"M16 12.5c-2.2-1.2-4.8-1.4-7.4-.7L1 9l3.2 2.8-2.9.1 3.6 2-2.3.8 4.4 1.1-1.5 1.3 4.9-.2L13.2 20 12 26l2.8-2.6L16 28.5l1.2-5.1L20 26l-1.2-6 2.8-3.1 4.9.2-1.5-1.3 4.4-1.1-2.3-.8 3.6-2-2.9-.1L31 9l-7.6 2.8c-2.6-.7-5.2-.5-7.4.7z\"/><path fill=\"#8B5A2B\" d=\"M16 13.5c-1.8 1.5-2.6 4-2.4 6.6l2.4 2.2 2.4-2.2c.2-2.6-.6-5.1-2.4-6.6z\"/><ellipse cx=\"16\" cy=\"10.2\" rx=\"3\" ry=\"3.1\" fill=\"#FBF8EF\" stroke=\"#C9BFA6\" stroke-width=\".5\"/><path fill=\"#E8A21A\" d=\"M14.9 11.4h2.2L16 14z\"/><circle cx=\"14.8\" cy=\"9.6\" r=\".55\" fill=\"#2A1C10\"/><circle cx=\"17.2\" cy=\"9.6\" r=\".55\" fill=\"#2A1C10\"/></svg>", "sheep": "<svg class=\"ach-ic\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><rect x=\"9.5\" y=\"20\" width=\"2\" height=\"6.5\" rx=\"1\" fill=\"#3B3632\"/><rect x=\"13.5\" y=\"21\" width=\"2\" height=\"6\" rx=\"1\" fill=\"#3B3632\"/><rect x=\"17.5\" y=\"21\" width=\"2\" height=\"6\" rx=\"1\" fill=\"#3B3632\"/><rect x=\"21\" y=\"20\" width=\"2\" height=\"6.5\" rx=\"1\" fill=\"#3B3632\"/><path fill=\"#FFFFFF\" stroke=\"#9A9282\" stroke-width=\".9\" d=\"M6.5 14.5a3.2 3.2 0 0 1 4.3-3.6 3.6 3.6 0 0 1 6.4-.6 3.4 3.4 0 0 1 5.6 1.4 3.2 3.2 0 0 1 1.7 6 3.2 3.2 0 0 1-3.8 3.6 3.6 3.6 0 0 1-6 .2 3.4 3.4 0 0 1-5.2-1.3 3.1 3.1 0 0 1-3-5.7z\"/><ellipse cx=\"25.3\" cy=\"13.5\" rx=\"3.2\" ry=\"3.9\" fill=\"#3B3632\"/><ellipse cx=\"22.4\" cy=\"11.8\" rx=\"1.8\" ry=\".9\" transform=\"rotate(-25 22.4 11.8)\" fill=\"#3B3632\"/><circle cx=\"26.3\" cy=\"12.7\" r=\".7\" fill=\"#fff\"/><path d=\"M22.5 9.8c1.2-1.4 3.4-1.6 4.8-.4\" stroke=\"#fff\" stroke-width=\"1.6\" fill=\"none\" stroke-linecap=\"round\"/></svg>", "unicorn": "<svg class=\"ach-ic\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><path fill=\"#CFE3FA\" stroke=\"#8FB3E0\" stroke-width=\".6\" d=\"M12.5 17C8 16.6 4 13.5 2.5 8.5c2 1.6 4.2 2.2 6.4 2-1.8-1.1-3-2.9-3.3-5 2 1.9 4.4 2.8 6.8 2.8-1-1-1.5-2.3-1.4-3.7 1.8 2.4 4.2 3.8 6.8 4.2z\"/><path fill=\"#FFFFFF\" stroke=\"#A89BD0\" stroke-width=\".9\" d=\"M10.5 30c-.2-5.3 1.2-9.7 4.2-13l-.6-4.3c3 .4 5.2 1.7 6.6 3.8l5.4 2.4c1.1.5 1.6 1.8 1 2.9l-.7 1.2c-.5.9-1.6 1.3-2.6.9l-3.5-1.3c-2.1 2.4-3.2 5-3.3 7.4z\"/><path fill=\"#E9B83A\" d=\"M17.2 13.4 23.5 4l-3.6 10.4z\"/><path fill=\"#E58BC4\" d=\"M14.2 12.6c-2.6.4-4.4 2.6-4.6 5.6 1-1.4 2.2-2.1 3.6-2.2-1.4 1.8-1.8 4.2-1.2 6.6.6-2.2 1.6-3.8 3-4.8z\"/><path fill=\"#9C7BE0\" d=\"M14.4 12.6c.8-1.6 2.4-2.4 4.2-2.2-1 .6-1.6 1.4-1.8 2.4z\"/><circle cx=\"21.3\" cy=\"17.2\" r=\".85\" fill=\"#3A2A55\"/></svg>"};
+  function achievementFor(h,i){
+    var par = state.pars[h]||4, rel = state.scores[h][i], abs = par+rel;
+    // 1타 = 무조건 홀인원 / 알바트로스 = -3 이하(홀인원 제외) / 이글 = -2(홀인원 제외)
+    var a = { hio: abs===1, alb: false, eagle: false, birdie: rel===-1, sheep: abs>=par*2 };
+    a.alb = rel<=-3 && !a.hio;
+    a.eagle = rel===-2 && !a.hio;
+    a.celebrate = a.hio || a.alb;
+    return a;
+  }
+  // 축하금 등급: 가장 높은 것 하나만
+  function bonusTier(h,i){
+    var a = achievementFor(h,i);
+    if(a.hio || a.alb) return 'hio';
+    if(a.eagle) return 'eagle';
+    if(a.birdie) return 'birdie';
+    return null;
+  }
+  var TIER_LABEL = { birdie:'버디', eagle:'이글', hio:'홀인원', near:'니어', long:'롱기' };
+  function achBadges(a){
+    if(!(a.hio||a.alb||a.eagle||a.birdie||a.sheep)) return null;
+    var wrap = document.createElement('span');
+    wrap.className = 'ach';
+    var html = '';
+    if(a.birdie) html += '<span class="ach-pill birdie" title="버디">'+ACH_ICON.butterfly+'<span class="w">Birdie!</span></span>';
+    if(a.eagle) html += '<span class="ach-pill eagle" title="이글">'+ACH_ICON.eagle+'<span class="w">Eagle!!</span></span>';
+    if(a.alb) html += '<span class="ach-pill alb" title="알바트로스">'+ACH_ICON.unicorn+'<span class="w">Albatross!</span></span>';
+    if(a.hio) html += '<span class="hio" title="홀인원">Hole in One</span>';
+    if(a.sheep) html += '<span class="ach-pill sheep" title="양파 (파×2)">'+ACH_ICON.sheep+'<span class="w">양파!</span></span>';
+    wrap.innerHTML = html;
+    return wrap;
+  }
+  function decorateName(nameEl, a){
+    if(!a.celebrate) return nameEl;
+    nameEl.classList.add('celebrate');
+    var w = document.createElement('span');
+    w.className = 'star-wrap';
+    w.appendChild(nameEl);
+    for(var k=1;k<=6;k++){
+      var sp = document.createElement('i');
+      sp.className = 'sp s'+k; sp.textContent = (k%2 ? '✦' : '✧');
+      sp.setAttribute('aria-hidden','true');
+      w.appendChild(sp);
+    }
+    return w;
+  }
+
   // ---------- PLAY ----------
   function renderPlay(){
     updateRoundMeta();
@@ -1193,16 +1467,20 @@
         dot.className='dot'; dot.style.background = PALETTE[i%PALETTE.length];
         var name = document.createElement('div');
         name.className='pname'; name.textContent = state.names[i]||('플레이어'+(i+1));
+        var ach = achievementFor(h,i);
+        var nameEl = decorateName(name, ach);
+        var badges = achBadges(ach);
         namePart.appendChild(dot);
         if(team){
           var stack = document.createElement('div');
           stack.className = 'name-stack';
-          stack.appendChild(name);
+          stack.appendChild(nameEl);
+          if(badges) stack.appendChild(badges);
           var ball = getDraw(h)[i];
           if(ball){
             var tag = document.createElement('span');
             tag.className = 'ball '+ball;
-            tag.innerHTML = (ICON[ball]||'') + BALL_LABEL[ball] + (ball==='J' ? ' · '+relLabel(state.jokerRel) : '');
+            tag.innerHTML = (ICON[ball]||'') + BALL_LABEL[ball] + (ball==='J' ? ' · '+jokerLabel() : '');
             stack.appendChild(tag);
           } else {
             var db = document.createElement('button');
@@ -1212,7 +1490,8 @@
           }
           namePart.appendChild(stack);
         } else {
-          namePart.appendChild(name);
+          namePart.appendChild(nameEl);
+          if(badges) namePart.appendChild(badges);
         }
 
         var stepRow = document.createElement('div');
@@ -1231,9 +1510,12 @@
         });
         stepRow.appendChild(minus); stepRow.appendChild(val); stepRow.appendChild(plus);
 
-        row.appendChild(namePart); row.appendChild(stepRow);
+        row.appendChild(namePart);
+        var holePar = state.pars[h]||4;
 
-        if(!team && state.bonuses.near>0){
+        var nearOn = team ? (state.teamBonus && state.teamBonus.near.amt>0) : state.bonuses.near>0;
+        var longOn = team ? (state.teamBonus && state.teamBonus.long.amt>0) : state.bonuses.long>0;
+        if(nearOn && holePar===3){
           var nearBtn = document.createElement('button');
           nearBtn.className='nl-toggle'; nearBtn.textContent='니어'; nearBtn.title='니어 선택';
           nearBtn.setAttribute('aria-pressed', String(state.nearWinner[h]===i));
@@ -1243,7 +1525,7 @@
           });
           row.appendChild(nearBtn);
         }
-        if(!team && state.bonuses.long>0){
+        if(longOn && holePar===5){
           var longBtn = document.createElement('button');
           longBtn.className='nl-toggle'; longBtn.textContent='롱기'; longBtn.title='롱기 선택';
           longBtn.setAttribute('aria-pressed', String(state.longWinner[h]===i));
@@ -1253,6 +1535,7 @@
           });
           row.appendChild(longBtn);
         }
+        row.appendChild(stepRow);
 
         rows.appendChild(row);
       })(i);
@@ -1286,7 +1569,8 @@
     var defs = [
       {key:'birdie', label:'버디', on:auto.birdie},
       {key:'tie3', label:'동타 3명', on:auto.tie3},
-      {key:'triple', label:'트리플', on:auto.triple},
+      {key:'triple', label:'트리플 이상', on:auto.triple},
+      {key:'double3', label:'더블(파3)', on:auto.double3},
       {key:'ob', label:'OB', on:!!state.manualOB[h]}
     ];
     defs.forEach(function(d){
@@ -1301,15 +1585,14 @@
   function renderBonusSummary(h){
     var el = $('bonusSummary');
     var parts = [];
-    if(state.bonuses.birdie>0){
-      var names = [];
-      for(var i=0;i<state.playerCount;i++){ if(state.scores[h][i]<=-1) names.push(state.names[i]||('P'+(i+1))); }
-      if(names.length) parts.push('🐦 버디 '+names.join(', '));
+    for(var i=0;i<state.playerCount;i++){
+      var tier = bonusTier(h,i);
+      if(tier && (state.bonuses[tier]||0)>0) parts.push(TIER_LABEL[tier]+' '+(state.names[i]||('P'+(i+1))));
     }
-    if(state.bonuses.near>0 && state.nearWinner[h]!=null){
+    if(state.bonuses.near>0 && state.nearWinner[h]!=null && (state.pars[h]||4)===3){
       parts.push('니어 '+(state.names[state.nearWinner[h]]||''));
     }
-    if(state.bonuses.long>0 && state.longWinner[h]!=null){
+    if(state.bonuses.long>0 && state.longWinner[h]!=null && (state.pars[h]||4)===5){
       parts.push('롱기 '+(state.names[state.longWinner[h]]||''));
     }
     el.textContent = parts.join('   ');
@@ -1351,10 +1634,11 @@
         + (r.carryIn>0?' · 이월 포함':'') + (r.per<r.stake?' · 판돈 잔액만큼':'');
     }
     box.appendChild(res);
-    if(r.birdieIdx && r.birdieIdx.length && r.birdieIdx.some(function(i){ return r.birdieAmt[i]>0; })){
+    if(r.awards && r.awards.length){
       var bd = document.createElement('div'); bd.className='team-result';
-      bd.innerHTML = '🐦 버디 축하금' + (state.teamBirdieMode==='separate'?'(별도)':'(판돈)') + ' · ' + r.birdieIdx.map(function(i){
-        return escapeHtml(state.names[i]||('P'+(i+1)))+' <span class="amt">+'+r.birdieAmt[i].toLocaleString('ko-KR')+'원</span>';
+      bd.innerHTML = '🎉 축하금 · ' + r.awards.map(function(a){
+        return escapeHtml(state.names[a.i]||('P'+(a.i+1)))+' '+TIER_LABEL[a.kind]
+          +' <span class="amt">+'+a.got.toLocaleString('ko-KR')+'원</span>'+(a.mode==='separate'?'(별도)':'(판돈)');
       }).join(' · ');
       box.appendChild(bd);
     }
@@ -1515,14 +1799,18 @@
       var tf = teamFinal();
       var parts = ['판돈 '+(state.deposit*state.playerCount).toLocaleString('ko-KR')+'원 (1인 '+state.deposit.toLocaleString('ko-KR')+'원)',
                    '홀당 인당 '+state.holeAmount.toLocaleString('ko-KR')+'원'];
-      if(state.teamBirdie>0) parts.push('버디 축하금 '+state.teamBirdie.toLocaleString('ko-KR')+'원('+(state.teamBirdieMode==='separate'?'별도계산':'총금액차감')+')');
+      normTeamBonus();
+      TEAM_BONUS_KEYS.forEach(function(k){
+        var c = state.teamBonus[k[0]];
+        if(c.amt>0) parts.push(TIER_LABEL[k[0]]+' '+c.amt.toLocaleString('ko-KR')+'원('+(c.mode==='separate'?'별도':'차감')+')');
+      });
       var line2 = tf.left>0 ? '<br>남은 판돈 '+tf.left.toLocaleString('ko-KR')+'원은 4명에게 균등 환급' : '';
       var wonLine = '<br>회수: ' + state.names.slice(0,state.playerCount).map(function(nm,i){
         return escapeHtml(nm||('P'+(i+1)))+' '+tf.won[i].toLocaleString('ko-KR')+'원';
       }).join(' · ');
       var bLine = '';
-      if(state.teamBirdie>0 && tf.birdie.some(function(v){return v!==0;})){
-        bLine = '<br>버디 축하금: ' + state.names.slice(0,state.playerCount).map(function(nm,i){
+      if(tf.birdie.some(function(v){return v!==0;})){
+        bLine = '<br>별도 축하금: ' + state.names.slice(0,state.playerCount).map(function(nm,i){
           return escapeHtml(nm||('P'+(i+1)))+' '+fmt(tf.birdie[i]);
         }).join(' · ');
       }
@@ -1533,7 +1821,16 @@
     }
   }
 
+  function relSumsConfirmed(){
+    var n = state.playerCount, out = new Array(n).fill(0);
+    for(var h=1; h<=state.holeCount; h++){
+      if(!state.confirmedHoles[h] || !state.scores[h]) continue;
+      for(var i=0;i<n;i++) out[i] += state.scores[h][i]||0;
+    }
+    return out;
+  }
   function renderScoreboardMedals(totals, strokes){
+    var relSums = relSumsConfirmed();
     var el = $('finalScoreboard');
     el.innerHTML = '';
     var medals = ['🥇','🥈','🥉'];
@@ -1543,9 +1840,14 @@
       row.className='final-row';
       var medal = document.createElement('div'); medal.className='medal'; medal.textContent = rank<3?medals[rank]:(rank+1)+'';
       var meta = document.createElement('div'); meta.className='meta';
-      var pn = document.createElement('div'); pn.className='pname'; pn.textContent = state.names[idx]||('플레이어'+(idx+1));
-      var st = document.createElement('div'); st.className='strokes'; st.textContent = strokes[idx]+'타';
-      meta.appendChild(pn); meta.appendChild(st);
+      var pn = document.createElement('div'); pn.className='pname';
+      pn.textContent = state.names[idx]||('플레이어'+(idx+1));
+      var rs = document.createElement('span'); rs.className='rel-sum';
+      rs.textContent = '('+fmtRel(relSums[idx])+')';
+      var ts = document.createElement('span'); ts.className='tot-strokes';
+      ts.textContent = strokes[idx]+'타';
+      pn.appendChild(rs); pn.appendChild(ts);
+      meta.appendChild(pn);
       var money = document.createElement('div'); money.className='money '+moneyClass(totals[idx]); money.textContent = fmt(totals[idx]);
       row.appendChild(medal); row.appendChild(meta); row.appendChild(money);
       el.appendChild(row);
@@ -1652,14 +1954,21 @@
     var totals = state.lastResultTotals || [];
     var strokes = state.lastResultStrokes || [];
     var lines = [];
-    lines.push('⛳ 라운딩 정산 결과');
+    lines.push('⛳ 내기골프계산기 정산 결과');
     var headBits = [];
     if(state.courseName) headBits.push(state.courseName);
     if(state.roundDate) headBits.push(fmtDate(state.roundDate));
     if(headBits.length) lines.push(headBits.join(' · '));
     if(state.mode==='team'){
       lines.push('팀전 · '+state.holeCount+'홀 · 선입금 '+state.deposit.toLocaleString('ko-KR')+'원 · 홀당 인당 '+state.holeAmount.toLocaleString('ko-KR')+'원'
-        + (state.teamBirdie>0 ? ' · 버디 축하금 '+state.teamBirdie.toLocaleString('ko-KR')+'원('+(state.teamBirdieMode==='separate'?'별도계산':'총금액차감')+')' : ''));
+        );
+      normTeamBonus();
+      var bparts = [];
+      TEAM_BONUS_KEYS.forEach(function(k){
+        var c = state.teamBonus[k[0]];
+        if(c.amt>0) bparts.push(TIER_LABEL[k[0]]+' '+c.amt.toLocaleString('ko-KR')+'원('+(c.mode==='separate'?'별도':'차감')+')');
+      });
+      if(bparts.length) lines.push('축하금: '+bparts.join(', '));
       var tfs = teamFinal();
       lines.push('회수: '+state.names.slice(0,state.playerCount).map(function(nm,i){ return nm+' '+tfs.won[i].toLocaleString('ko-KR')+'원'; }).join(', '));
       if(tfs.left>0) lines.push('남은 판돈 '+tfs.left.toLocaleString('ko-KR')+'원 균등 환급');
@@ -1668,10 +1977,11 @@
     }
     lines.push('');
     lines.push('[최종 결과]');
+    var relS = relSumsConfirmed();
     var order = totals.map(function(t,idx){return idx;}).sort(function(a,b){return totals[b]-totals[a];});
     order.forEach(function(idx, rank){
       var name = state.names[idx]||('플레이어'+(idx+1));
-      lines.push((rank+1)+'위 '+name+'  '+(strokes[idx]||0)+'타  '+fmt(totals[idx]));
+      lines.push((rank+1)+'위 '+name+' ('+fmtRel(relS[idx])+') '+(strokes[idx]||0)+'타  '+fmt(totals[idx]));
     });
     lines.push('');
     lines.push('[정산 방법]');
@@ -1689,7 +1999,7 @@
   $('shareBtn').addEventListener('click', function(){
     var text = buildShareText();
     if(navigator.share){
-      navigator.share({ title:'라운딩 정산 결과', text:text }).catch(function(){
+      navigator.share({ title:'내기골프계산기 정산 결과', text:text }).catch(function(){
         openSharePanel(text);
       });
     } else {
@@ -1701,7 +2011,7 @@
     $('sharePanel').hidden = false;
     $('shareText').value = text;
     $('copyNote').textContent = '';
-    var subject = encodeURIComponent('라운딩 정산 결과');
+    var subject = encodeURIComponent('내기골프계산기 정산 결과');
     var body = encodeURIComponent(text);
     $('mailLink').href = 'mailto:?subject='+subject+'&body='+body;
   }
@@ -1776,8 +2086,9 @@
       deposit: state.deposit,
       holeAmount: state.holeAmount,
       jokerRel: state.jokerRel,
-      teamBirdie: state.teamBirdie,
-      teamBirdieMode: state.teamBirdieMode,
+      jokerType: state.jokerType,
+      jokerStrokes: state.jokerStrokes,
+      teamBonus: state.teamBonus,
       draws: state.draws
     };
     list.unshift(record);
@@ -1831,7 +2142,7 @@
     state.names = r.names.slice();
     state.handicaps = r.handicaps ? r.handicaps.slice() : new Array(r.playerCount).fill(0);
     state.unit = r.unit;
-    state.bonuses = r.bonuses || { near:0, birdie:0, long:0 };
+    state.bonuses = Object.assign({ near:0, birdie:0, long:0, eagle:0, hio:0 }, r.bonuses||{});
     state.holeCount = r.holeCount;
     state.roundDate = r.roundDate || '';
     state.courseName = r.courseName || '';
@@ -1847,9 +2158,12 @@
     state.deposit = r.deposit!=null ? r.deposit : state.deposit;
     state.holeAmount = r.holeAmount!=null ? r.holeAmount : state.holeAmount;
     state.jokerRel = r.jokerRel!=null ? r.jokerRel : 0;
+    state.jokerType = r.jokerType || 'score';
+    state.jokerStrokes = r.jokerStrokes || 4;
     state.draws = r.draws || {};
-    state.teamBirdie = r.teamBirdie || 0;
-    state.teamBirdieMode = r.teamBirdieMode || 'separate';
+    if(r.teamBonus){ state.teamBonus = r.teamBonus; }
+    else { state.teamBonus = null; state.teamBirdie = r.teamBirdie||0; state.teamBirdieMode = r.teamBirdieMode||'separate'; }
+    normTeamBonus();
     state.lastResultTotals = r.totals;
     state.lastResultStrokes = r.strokes;
     showScreen('summary');
@@ -1866,6 +2180,8 @@
     $('bonusNear').value = state.bonuses.near;
     $('bonusBirdie').value = state.bonuses.birdie;
     $('bonusLong').value = state.bonuses.long;
+    $('bonusEagle').value = state.bonuses.eagle||0;
+    $('bonusHio').value = state.bonuses.hio||0;
     $('pcVal').textContent = state.playerCount;
     $('unitInput').value = state.unit;
     updateHoleChips();
@@ -1879,6 +2195,9 @@
       $('bonusNear').value = state.bonuses.near;
       $('bonusBirdie').value = state.bonuses.birdie;
       $('bonusLong').value = state.bonuses.long;
+      state.bonuses = Object.assign({ near:0, birdie:0, long:0, eagle:0, hio:0 }, state.bonuses);
+      $('bonusEagle').value = state.bonuses.eagle||0;
+      $('bonusHio').value = state.bonuses.hio||0;
       applyModeToSetup();
       activeScreen = 'play';
       applyScreen('play');
