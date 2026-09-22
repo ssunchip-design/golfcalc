@@ -1,0 +1,1391 @@
+<title>라운딩 정산</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+  :root{
+    --bg:#F6F4ED;
+    --surface:#FFFFFF;
+    --surface-2:#EDEAE0;
+    --ink:#1B2A20;
+    --muted:#66756A;
+    --accent:#2F7A4D;
+    --accent-dark:#1F5636;
+    --accent-ink:#F3F7F1;
+    --gold:#A9791F;
+    --win:#2F7A4D;
+    --win-bg:#E4F1E7;
+    --lose:#A23A2E;
+    --lose-bg:#F5E4DF;
+    --line:#DEDACE;
+    --shadow: 0 1px 2px rgba(27,42,32,.06), 0 8px 24px -12px rgba(27,42,32,.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#10160F;
+      --surface:#171F16;
+      --surface-2:#1E2A1C;
+      --ink:#EDEFE7;
+      --muted:#94A38F;
+      --accent:#4FA671;
+      --accent-dark:#7FCB9C;
+      --accent-ink:#0E1710;
+      --gold:#D8B25A;
+      --win:#5CB27F;
+      --win-bg:#1B2E20;
+      --lose:#E17A6C;
+      --lose-bg:#33201C;
+      --line:#2A352D;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#10160F;
+    --surface:#171F16;
+    --surface-2:#1E2A1C;
+    --ink:#EDEFE7;
+    --muted:#94A38F;
+    --accent:#4FA671;
+    --accent-dark:#7FCB9C;
+    --accent-ink:#0E1710;
+    --gold:#D8B25A;
+    --win:#5CB27F;
+    --win-bg:#1B2E20;
+    --lose:#E17A6C;
+    --lose-bg:#33201C;
+    --line:#2A352D;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    padding-inline:16px;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Noto Sans KR', system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1,h2,h3{ font-family:'Noto Serif KR', serif; margin:0; text-wrap:balance; }
+  button{ font-family:inherit; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+    outline: 2px solid var(--accent); outline-offset:2px;
+  }
+
+  .app{ max-width:480px; margin:0 auto; padding-block:18px 96px; display:flex; flex-direction:column; gap:16px; }
+
+  header.top{
+    display:flex; align-items:center; gap:10px;
+    padding-block:4px 6px;
+  }
+  .brand{ flex:1; min-width:0; display:flex; align-items:baseline; gap:8px; overflow:hidden; }
+  .brand h1{ font-size:21px; color:var(--accent-dark); letter-spacing:.2px; white-space:nowrap; }
+  .brand .sub{ font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .icon-btn{
+    border:1px solid var(--line); background:var(--surface); color:var(--ink);
+    width:36px;height:36px;border-radius:10px; display:flex;align-items:center;justify-content:center;
+    cursor:pointer; font-size:16px; flex:none;
+  }
+
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:18px; box-shadow:var(--shadow);
+  }
+  .card + .card{ margin-top:0; }
+  .field{ display:flex; flex-direction:column; gap:8px; margin-block:14px 0; }
+  .field:first-child{ margin-block-start:0; }
+  label.field-label{ font-size:13px; font-weight:700; color:var(--muted); }
+  .field-hint{ font-size:12px; color:var(--muted); margin-top:-2px; }
+
+  .text-input, input[type=text].plain, input[type=date].plain{
+    width:100%; padding:11px 12px; border-radius:10px; border:1px solid var(--line);
+    background:var(--bg); color:var(--ink); font-size:15px; font-family:inherit;
+  }
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .three-col{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .three-col label{ display:block; font-size:11px; color:var(--muted); margin-bottom:4px; }
+
+  .stepper-row{ display:flex; align-items:center; gap:10px; }
+  .stepper-btn{
+    width:40px;height:40px;border-radius:10px;border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink); font-size:19px; font-weight:700;
+    cursor:pointer; flex:none; display:flex; align-items:center; justify-content:center;
+    line-height:1;
+  }
+  .stepper-btn:active{ transform:scale(.94); }
+  .stepper-val{
+    min-width:54px; text-align:center; font-size:22px; font-weight:700;
+    font-family:'Noto Serif KR', serif;
+  }
+
+  .name-list{ display:flex; flex-direction:column; gap:10px; }
+  .name-row{ display:flex; align-items:flex-end; gap:8px; }
+  .name-row .dot{ width:10px;height:10px;border-radius:50%; flex:none; margin-bottom:11px; }
+  .name-row input[type=text]{
+    flex:1 1 60px; min-width:0; padding:10px 12px; border-radius:10px; border:1px solid var(--line);
+    background:var(--bg); color:var(--ink); font-size:15px;
+  }
+  .handi-col{ display:flex; flex-direction:column; gap:3px; flex:0 0 108px; }
+  .handi-col label{ font-size:10px; font-weight:700; color:var(--muted); padding-right:2px; }
+  .handi-col input[type=number]{
+    width:100%; padding:10px 10px; border-radius:10px; border:1px solid var(--line);
+    background:var(--bg); color:var(--ink); font-size:14px; font-weight:700; text-align:right;
+    font-family:'Noto Serif KR', serif;
+  }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    padding:9px 14px; border-radius:999px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
+  }
+  .chip[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .chip.small{ padding:6px 12px; font-size:13px; }
+  .chip.warn[aria-pressed="true"]{ background:var(--gold); border-color:var(--gold); color:var(--accent-ink); }
+  .chip.nl[aria-pressed="true"]{ background:var(--gold); border-color:var(--gold); color:var(--accent-ink); }
+
+  .unit-input{ display:flex; align-items:center; gap:8px; }
+  .unit-input input[type=number]{
+    width:30%; min-width:88px; flex:none; padding:11px 12px; border-radius:10px; border:1px solid var(--line);
+    background:var(--bg); color:var(--ink); font-size:15px; font-weight:700; text-align:right;
+    font-family:'Noto Serif KR', serif;
+  }
+  .unit-input span{ font-size:13px; color:var(--muted); flex:none; }
+
+  .primary-btn{
+    width:100%; padding:14px; border-radius:12px; border:none;
+    background:var(--accent); color:var(--accent-ink); font-size:16px; font-weight:700;
+    cursor:pointer; box-shadow:var(--shadow);
+  }
+  .primary-btn:active{ background:var(--accent-dark); }
+  .primary-btn[disabled]{ opacity:.45; cursor:not-allowed; }
+  .ghost-btn{
+    width:100%; padding:12px; border-radius:12px; border:1px solid var(--line);
+    background:transparent; color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
+  }
+  .gold-btn{
+    width:100%; padding:13px; border-radius:12px; border:none;
+    background:var(--gold); color:var(--accent-ink); font-size:15px; font-weight:700; cursor:pointer;
+  }
+
+  /* Play screen */
+  .round-meta{ text-align:center; font-size:12px; color:var(--muted); margin-bottom:10px; }
+  .round-meta b{ color:var(--ink); }
+
+  .hole-nav{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .hole-nav .nav-btn{
+    width:38px;height:38px;border-radius:10px;border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink); font-size:16px; cursor:pointer;
+  }
+  .hole-nav .nav-btn[disabled]{ opacity:.3; }
+  .hole-title{ text-align:center; }
+  .hole-title .num{ font-size:26px; font-weight:700; }
+  .hole-title .of{ font-size:12px; color:var(--muted); }
+
+  .par-row{ display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; }
+  .par-row span.lbl{ font-size:12px; color:var(--muted); margin-right:2px; }
+
+  .baepan-badge{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    margin-top:10px; padding:8px 10px; border-radius:10px;
+    background:var(--lose-bg); color:var(--lose); font-size:13px; font-weight:700;
+  }
+  .bonus-summary{
+    text-align:center; font-size:12px; font-weight:700; color:var(--gold); margin-top:8px;
+  }
+
+  .cond-row{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:8px; }
+  .cond-badge{
+    font-size:11px; padding:5px 9px; border-radius:999px; background:var(--surface-2); color:var(--muted); font-weight:600;
+  }
+  .cond-badge.on{ background:var(--win-bg); color:var(--win); }
+
+  .score-row{
+    display:flex; align-items:center; flex-wrap:wrap; gap:8px 10px; padding-block:12px;
+    border-top:1px solid var(--line);
+  }
+  .score-row:first-of-type{ border-top:none; }
+  .score-row .pname{ min-width:0; font-size:15px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .score-row .dot{ width:9px;height:9px;border-radius:50%; flex:none; }
+  .score-row .name-part{ display:flex; align-items:center; gap:8px; flex:1 1 72px; min-width:0; }
+  .score-row .stepper-row{ flex:none; gap:6px; }
+  .score-row .stepper-btn{ width:34px; height:34px; font-size:17px; }
+  .score-row .stepper-val{ min-width:32px; font-size:18px; }
+  .nl-toggle{
+    height:34px; padding:0 10px; border-radius:9px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--muted); font-size:11px; font-weight:700; cursor:pointer; flex:none;
+    display:flex; align-items:center; justify-content:center; white-space:nowrap;
+  }
+  .nl-toggle[aria-pressed="true"]{ background:var(--gold); border-color:var(--gold); color:var(--accent-ink); }
+
+  .hole-money{
+    margin-top:6px; padding-top:12px; border-top:1px dashed var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-direction:column; gap:6px;
+  }
+  .hole-money .line{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .hole-money .payer{ flex:1; min-width:0; }
+  .hole-money .payer .pname-inline{ color:var(--ink); font-weight:700; }
+  .hole-money .payer .to-list{ font-size:11px; color:var(--muted); font-weight:400; margin-left:6px; }
+  .hole-money b{ color:var(--ink); flex:none; white-space:nowrap; }
+
+  .scoreboard{ display:flex; flex-direction:column; gap:8px; }
+  .sb-row{
+    display:flex; align-items:center; gap:10px; padding:10px 12px;
+    background:var(--surface-2); border-radius:12px;
+  }
+  .sb-row .rank{ font-size:12px; color:var(--muted); width:16px; flex:none; }
+  .sb-row .pname{ flex:1; min-width:0; font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sb-row .strokes{ font-size:11px; color:var(--muted); flex:none; }
+  .sb-row .money{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:16px; flex:none; min-width:74px; text-align:right; }
+  .money.pos{ color:var(--win); }
+  .money.neg{ color:var(--lose); }
+  .money.zero{ color:var(--muted); }
+
+  .section-label{ font-size:13px; font-weight:700; color:var(--muted); margin-block-end:8px; }
+
+  /* Summary */
+  .final-row{
+    display:flex; align-items:center; gap:12px; padding:14px 12px; border-radius:14px;
+    background:var(--surface-2);
+  }
+  .final-row .medal{ font-size:20px; width:26px; text-align:center; flex:none; }
+  .final-row .meta{ flex:1; min-width:0; }
+  .final-row .pname{ font-weight:700; font-size:15px; }
+  .final-row .strokes{ font-size:12px; color:var(--muted); }
+  .final-row .money{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:19px; flex:none; }
+
+  .settle-list{ display:flex; flex-direction:column; gap:8px; }
+  .settle-item{
+    display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px;
+    background:var(--bg); border:1px solid var(--line); font-size:14px;
+  }
+  .settle-item b{ font-weight:700; }
+  .settle-item .arrow{ color:var(--gold); font-weight:700; }
+  .settle-item .amt{ margin-left:auto; font-family:'Noto Serif KR',serif; font-weight:700; color:var(--gold); }
+
+  /* History */
+  .hist-item{
+    display:flex; align-items:center; gap:10px; padding:14px; border-radius:14px;
+    background:var(--surface-2); cursor:pointer; text-align:left; border:none; width:100%; color:var(--ink);
+  }
+  .hist-item .meta{ flex:1; min-width:0; }
+  .hist-item .date{ font-size:12px; color:var(--muted); }
+  .hist-item .players{ font-size:14px; font-weight:700; margin-top:2px; }
+  .hist-item .top{ font-size:12px; color:var(--gold); margin-top:2px; }
+  .empty-note{ font-size:14px; color:var(--muted); text-align:center; padding:28px 12px; }
+
+  .hole-log{ display:flex; flex-direction:column; gap:6px; }
+  .hole-log-row{
+    display:flex; align-items:center; gap:8px; font-size:13px; padding:8px 0;
+    border-top:1px solid var(--line);
+  }
+  .hole-log-row:first-child{ border-top:none; }
+  .hole-log-row .hn{ width:48px; flex:none; color:var(--muted); font-weight:700; }
+  .hole-log-row .scores{ flex:1; min-width:0; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hole-log-row .x2{ flex:none; font-size:11px; font-weight:700; color:var(--lose); background:var(--lose-bg); padding:2px 6px; border-radius:6px; }
+
+  /* Share panel */
+  .share-box textarea{
+    width:100%; min-height:180px; padding:12px; border-radius:10px; border:1px solid var(--line);
+    background:var(--bg); color:var(--ink); font-size:13px; font-family:inherit; resize:vertical;
+    line-height:1.5;
+  }
+  .share-actions{ display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+  .share-link{
+    display:block; text-align:center; padding:12px; border-radius:12px; border:1px solid var(--line);
+    background:transparent; color:var(--ink); font-size:14px; font-weight:600; text-decoration:none;
+  }
+  .copy-note{ font-size:12px; color:var(--win); text-align:center; margin-top:8px; min-height:14px; }
+
+  .bottom-bar{
+    position:fixed; left:0; right:0; bottom:0;
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+    background:linear-gradient(to top, var(--bg) 60%, transparent);
+  }
+  .bottom-bar .inner{ max-width:480px; margin:0 auto; display:flex; gap:10px; }
+
+  [hidden]{ display:none !important; }
+</style>
+
+<div class="app">
+  <header class="top">
+    <button class="icon-btn" id="backBtn" title="뒤로" aria-label="뒤로" hidden>←</button>
+    <div class="brand">
+      <h1>라운딩 정산</h1>
+      <span class="sub">스트로크 내기 자동 계산</span>
+    </div>
+    <button class="icon-btn" id="historyBtn" title="지난 라운딩" aria-label="지난 라운딩">☰</button>
+  </header>
+
+  <!-- SETUP SCREEN -->
+  <section id="screen-setup">
+    <div class="card">
+      <div class="field">
+        <label class="field-label">날짜 / 골프장</label>
+        <div class="two-col">
+          <input type="date" class="plain" id="roundDateInput">
+          <input type="text" class="plain" id="courseNameInput" placeholder="골프장 이름">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="field" style="margin-top:0;">
+        <label class="field-label">인원</label>
+        <div class="stepper-row">
+          <button class="stepper-btn" id="pcMinus" aria-label="인원 줄이기">−</button>
+          <div class="stepper-val" id="pcVal">4</div>
+          <button class="stepper-btn" id="pcPlus" aria-label="인원 늘리기">+</button>
+          <span style="color:var(--muted);font-size:13px;">명</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">플레이어 이름 &amp; 핸디</label>
+        <div class="field-hint">시작 전 접대(핸디캡)를 금액으로 미리 줄 경우 입력하세요. 없으면 0.</div>
+        <div class="name-list" id="nameList"></div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">1타당 금액</label>
+        <div class="unit-input">
+          <input type="number" id="unitInput" inputmode="numeric" value="1000" min="0" step="100">
+          <span>원 / 타</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="field" style="margin-top:0;">
+        <label class="field-label">니어 · 버디 · 롱기 상금</label>
+        <div class="three-col">
+          <div>
+            <label>니어</label>
+            <input type="number" class="text-input" id="bonusNear" value="0" min="0" step="500">
+          </div>
+          <div>
+            <label>버디</label>
+            <input type="number" class="text-input" id="bonusBirdie" value="0" min="0" step="500">
+          </div>
+          <div>
+            <label>롱기</label>
+            <input type="number" class="text-input" id="bonusLong" value="0" min="0" step="500">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="field" style="margin-top:0;">
+        <label class="field-label">배판 옵션</label>
+        <div class="chip-row" id="baepanCondChips">
+          <button class="chip" data-cond="birdie">버디</button>
+          <button class="chip" data-cond="tie3">동타 3명</button>
+          <button class="chip" data-cond="triple">트리플</button>
+          <button class="chip" data-cond="ob">OB</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">배판 적용 시점</label>
+        <div class="chip-row" id="baepanTimingChips">
+          <button class="chip" data-timing="current">당홀 배판</button>
+          <button class="chip" data-timing="next">다음홀 배판</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="field" style="margin-top:0;">
+        <label class="field-label">홀 수</label>
+        <div class="chip-row" id="holeChips">
+          <button class="chip" data-holes="9">9홀</button>
+          <button class="chip" data-holes="18">18홀</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <button class="primary-btn" id="startBtn">라운딩 시작</button>
+    </div>
+  </section>
+
+  <!-- PLAY SCREEN -->
+  <section id="screen-play" hidden>
+    <div class="round-meta" id="roundMetaPlay"></div>
+    <div class="card">
+      <div class="hole-nav">
+        <button class="nav-btn" id="holePrev" aria-label="이전 홀">‹</button>
+        <div class="hole-title">
+          <div class="num" id="holeNum">1</div>
+          <div class="of" id="holeOf">/ 18홀</div>
+        </div>
+        <button class="nav-btn" id="holeNext" aria-label="다음 홀">›</button>
+      </div>
+
+      <div class="par-row">
+        <span class="lbl">파</span>
+        <button class="chip small" data-par="3">3</button>
+        <button class="chip small" data-par="4">4</button>
+        <button class="chip small" data-par="5">5</button>
+        <button class="chip small warn" id="obToggleChip" hidden>OB 발생</button>
+      </div>
+
+      <div id="baepanBadge" class="baepan-badge" hidden>🔥 이번 홀 배판 (2배 정산)</div>
+      <div id="condRow" class="cond-row"></div>
+      <div id="bonusSummary" class="bonus-summary" hidden></div>
+
+      <div id="scoreRows" style="margin-top:8px;"></div>
+
+      <div class="hole-money" id="holeMoney"></div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="section-label">현재 정산</div>
+      <div class="scoreboard" id="liveScoreboard"></div>
+    </div>
+
+    <div class="bottom-bar">
+      <div class="inner">
+        <button class="ghost-btn" id="endRoundBtn" style="flex:none; width:auto; padding-inline:16px;">종료</button>
+        <button class="primary-btn" id="nextHoleBtn">이 홀 확정 →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUMMARY SCREEN -->
+  <section id="screen-summary" hidden>
+    <div class="round-meta" id="roundMetaSummary"></div>
+    <div class="card">
+      <div class="section-label">최종 결과</div>
+      <div class="scoreboard" id="finalScoreboard"></div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="section-label">정산 방법 (최소 송금)</div>
+      <div class="settle-list" id="settleList"></div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="section-label">홀별 기록</div>
+      <div class="hole-log" id="holeLog"></div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="section-label">공유하기</div>
+      <button class="gold-btn" id="shareBtn">카톡 · 메일로 결과 보내기</button>
+      <div class="share-box" id="sharePanel" hidden style="margin-top:12px;">
+        <textarea id="shareText" readonly></textarea>
+        <div class="share-actions">
+          <button class="ghost-btn" id="copyBtn">텍스트 복사하기</button>
+          <a class="share-link" id="mailLink" href="#">이메일로 보내기</a>
+        </div>
+        <div class="copy-note" id="copyNote"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px; display:flex; flex-direction:column; gap:10px;">
+      <button class="primary-btn" id="newRoundBtn">새 라운딩 시작</button>
+    </div>
+  </section>
+
+  <!-- HISTORY SCREEN -->
+  <section id="screen-history" hidden>
+    <div class="card">
+      <div class="section-label">지난 라운딩</div>
+      <div id="historyList" style="display:flex; flex-direction:column; gap:10px;"></div>
+    </div>
+    <div class="card" style="margin-top:14px;">
+      <button class="ghost-btn" id="historyBackBtn">← 돌아가기</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var PALETTE = ['#2F7A4D','#A9791F','#3B6EA5','#8B4B9C'];
+  var SCORE_MIN = -5, SCORE_MAX = 10;
+
+  function todayStr(){
+    var d = new Date();
+    var mm = String(d.getMonth()+1).padStart(2,'0');
+    var dd = String(d.getDate()).padStart(2,'0');
+    return d.getFullYear()+'-'+mm+'-'+dd;
+  }
+
+  var state = {
+    roundDate: todayStr(),
+    courseName: '',
+    playerCount: 4,
+    names: ['나','친구1','친구2','친구3'],
+    handicaps: [0,0,0,0],
+    unit: 1000,
+    bonuses: { near:0, birdie:0, long:0 },
+    holeCount: 18,
+    currentHole: 1,
+    pars: {},              // holeNum -> 3|4|5
+    scores: {},             // holeNum -> [파 대비 +/- 타수 per player], 0 = 파
+    confirmedHoles: {},
+    manualOB: {},            // holeNum -> bool
+    nextHoleDoubleFlag: {},   // holeNum -> bool (다음홀 배판 예약)
+    baepan: { birdie:false, tie3:false, triple:false, ob:false, timing:'current' },
+    nearWinner: {},           // holeNum -> playerIdx | null
+    longWinner: {},           // holeNum -> playerIdx | null
+    lastResultTotals: null,
+    lastResultStrokes: null
+  };
+
+  var navStack = [];
+  var activeScreen = 'setup';
+
+  function $(id){ return document.getElementById(id); }
+  function fmt(n){
+    var sign = n>0?'+':(n<0?'−':'');
+    return sign + Math.abs(n).toLocaleString('ko-KR') + '원';
+  }
+  function fmtRel(n){
+    if(n===0) return '0';
+    return (n>0? '+'+n : String(n));
+  }
+  function moneyClass(n){ return n>0?'pos':(n<0?'neg':'zero'); }
+  function safeGet(key){ try{ return localStorage.getItem(key); }catch(e){ return null; } }
+  function safeSet(key,val){ try{ localStorage.setItem(key,val); }catch(e){} }
+  function safeRemove(key){ try{ localStorage.removeItem(key); }catch(e){} }
+  function escapeHtml(s){ var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function fmtDate(str){
+    if(!str) return '';
+    var p = str.split('-');
+    if(p.length<3) return str;
+    return p[0]+'.'+p[1]+'.'+p[2];
+  }
+
+  // ---------- SCREEN NAV ----------
+  function applyScreen(name){
+    ['setup','play','summary','history'].forEach(function(s){
+      $('screen-'+s).hidden = (s!==name);
+    });
+    if(name==='play'){ renderPlay(); }
+    else if(name==='summary'){ renderSummaryFromState(); }
+    else if(name==='history'){ renderHistory(); }
+  }
+  function showScreen(name){
+    if(name!==activeScreen){ navStack.push(activeScreen); }
+    activeScreen = name;
+    applyScreen(name);
+    $('backBtn').hidden = navStack.length===0;
+  }
+  function goBack(){
+    if(!navStack.length) return;
+    var prev = navStack.pop();
+    activeScreen = prev;
+    applyScreen(prev);
+    $('backBtn').hidden = navStack.length===0;
+  }
+  $('backBtn').addEventListener('click', goBack);
+  $('historyBackBtn').addEventListener('click', goBack);
+
+  // ---------- SETUP ----------
+  $('roundDateInput').value = state.roundDate;
+  $('roundDateInput').addEventListener('input', function(e){ state.roundDate = e.target.value; });
+  $('courseNameInput').addEventListener('input', function(e){ state.courseName = e.target.value; });
+
+  $('bonusNear').addEventListener('input', function(e){ state.bonuses.near = parseInt(e.target.value,10)||0; });
+  $('bonusBirdie').addEventListener('input', function(e){ state.bonuses.birdie = parseInt(e.target.value,10)||0; });
+  $('bonusLong').addEventListener('input', function(e){ state.bonuses.long = parseInt(e.target.value,10)||0; });
+
+  function renderNameList(){
+    var list = $('nameList');
+    list.innerHTML = '';
+    for(var i=0;i<state.playerCount;i++){
+      (function(i){
+        var row = document.createElement('div');
+        row.className = 'name-row';
+
+        var dot = document.createElement('div');
+        dot.className = 'dot';
+        dot.style.background = PALETTE[i%PALETTE.length];
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.value = state.names[i] || ('플레이어'+(i+1));
+        input.maxLength = 8;
+        input.placeholder = '플레이어'+(i+1);
+        input.addEventListener('input', function(e){ state.names[i] = e.target.value; });
+
+        var handiCol = document.createElement('div');
+        handiCol.className = 'handi-col';
+        var handiLabel = document.createElement('label');
+        handiLabel.textContent = '핸디금액';
+        var handiInput = document.createElement('input');
+        handiInput.type = 'number';
+        handiInput.step = '500';
+        handiInput.title = '시작 핸디 금액(원)';
+        handiInput.value = state.handicaps[i]||0;
+        handiInput.addEventListener('input', function(e){ state.handicaps[i] = parseInt(e.target.value,10)||0; });
+        handiCol.appendChild(handiLabel);
+        handiCol.appendChild(handiInput);
+
+        row.appendChild(dot);
+        row.appendChild(input);
+        row.appendChild(handiCol);
+        list.appendChild(row);
+      })(i);
+    }
+  }
+
+  $('pcMinus').addEventListener('click', function(){
+    if(state.playerCount>2){ state.playerCount--; renderNameList(); }
+  });
+  $('pcPlus').addEventListener('click', function(){
+    if(state.playerCount<4){ state.playerCount++; renderNameList(); }
+  });
+  $('pcVal').textContent = state.playerCount;
+  var pcObserver = function(){ $('pcVal').textContent = state.playerCount; };
+  ['pcMinus','pcPlus'].forEach(function(id){ $(id).addEventListener('click', pcObserver); });
+
+  $('unitInput').addEventListener('input', function(e){
+    state.unit = parseInt(e.target.value,10) || 0;
+  });
+
+  document.querySelectorAll('#holeChips .chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      state.holeCount = parseInt(chip.dataset.holes,10);
+      updateHoleChips();
+    });
+  });
+  function updateHoleChips(){
+    document.querySelectorAll('#holeChips .chip').forEach(function(chip){
+      chip.setAttribute('aria-pressed', String(parseInt(chip.dataset.holes,10)===state.holeCount));
+    });
+  }
+  updateHoleChips();
+
+  document.querySelectorAll('#baepanCondChips .chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      var key = chip.dataset.cond;
+      state.baepan[key] = !state.baepan[key];
+      updateBaepanChips();
+    });
+  });
+  document.querySelectorAll('#baepanTimingChips .chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      state.baepan.timing = chip.dataset.timing;
+      updateBaepanChips();
+    });
+  });
+  function updateBaepanChips(){
+    document.querySelectorAll('#baepanCondChips .chip').forEach(function(chip){
+      chip.setAttribute('aria-pressed', String(!!state.baepan[chip.dataset.cond]));
+    });
+    document.querySelectorAll('#baepanTimingChips .chip').forEach(function(chip){
+      chip.setAttribute('aria-pressed', String(chip.dataset.timing===state.baepan.timing));
+    });
+  }
+  updateBaepanChips();
+
+  $('startBtn').addEventListener('click', function(){
+    state.currentHole = 1;
+    state.scores = {};
+    state.confirmedHoles = {};
+    state.manualOB = {};
+    state.nextHoleDoubleFlag = {};
+    state.pars = {};
+    state.nearWinner = {};
+    state.longWinner = {};
+    state.lastResultTotals = null;
+    state.lastResultStrokes = null;
+    for(var h=1; h<=state.holeCount; h++){
+      state.scores[h] = new Array(state.playerCount).fill(0);
+      state.pars[h] = 4;
+    }
+    persistCurrent();
+    showScreen('play');
+  });
+
+  // ---------- BAEPAN / BONUS LOGIC ----------
+  // state.scores[h][i] is stored as strokes relative to par (0 = par, -1 = birdie, +3 = triple bogey, ...)
+  function autoConditionsForHole(h){
+    var rel = state.scores[h];
+    var birdie=false, triple=false;
+    rel.forEach(function(s){
+      if(s<=-1) birdie=true;
+      if(s>=3) triple=true;
+    });
+    var counts={};
+    rel.forEach(function(s){ counts[s]=(counts[s]||0)+1; });
+    var tie3=false;
+    Object.keys(counts).forEach(function(k){ if(counts[k]>=3) tie3=true; });
+    return {birdie:birdie, triple:triple, tie3:tie3};
+  }
+
+  function conditionsTriggered(h){
+    var auto = autoConditionsForHole(h);
+    var trig = false;
+    if(state.baepan.birdie && auto.birdie) trig=true;
+    if(state.baepan.tie3 && auto.tie3) trig=true;
+    if(state.baepan.triple && auto.triple) trig=true;
+    if(state.baepan.ob && state.manualOB[h]) trig=true;
+    return trig;
+  }
+
+  function isHoleDoubled(h){
+    if(state.nextHoleDoubleFlag[h]) return true;
+    if(state.baepan.timing==='current' && conditionsTriggered(h)) return true;
+    return false;
+  }
+
+  var anyBaepanEnabled = function(){
+    return state.baepan.birdie || state.baepan.tie3 || state.baepan.triple || state.baepan.ob;
+  };
+
+  function pairwiseHoleDeltas(h){
+    var rel = state.scores[h];
+    var n = state.playerCount;
+    var net = new Array(n).fill(0);
+    var mult = isHoleDoubled(h) ? 2 : 1;
+    for(var i=0;i<n;i++){
+      for(var j=i+1;j<n;j++){
+        var diff = rel[j]-rel[i]; // positive => i had fewer strokes => i wins (par cancels out)
+        var amt = diff*state.unit*mult;
+        net[i]+=amt;
+        net[j]-=amt;
+      }
+    }
+    return net;
+  }
+
+  function bonusDeltas(h){
+    var n = state.playerCount;
+    var net = new Array(n).fill(0);
+    var rel = state.scores[h];
+
+    if(state.bonuses.birdie>0){
+      var birdieIdx = [];
+      for(var i=0;i<n;i++){ if(rel[i]<=-1) birdieIdx.push(i); }
+      if(birdieIdx.length>0 && birdieIdx.length<n){
+        birdieIdx.forEach(function(bi){
+          for(var j=0;j<n;j++){
+            if(birdieIdx.indexOf(j)===-1){
+              net[bi]+=state.bonuses.birdie;
+              net[j]-=state.bonuses.birdie;
+            }
+          }
+        });
+      }
+    }
+    if(state.bonuses.near>0 && state.nearWinner[h]!=null){
+      var w = state.nearWinner[h];
+      for(var j2=0;j2<n;j2++){ if(j2!==w){ net[w]+=state.bonuses.near; net[j2]-=state.bonuses.near; } }
+    }
+    if(state.bonuses.long>0 && state.longWinner[h]!=null){
+      var w2 = state.longWinner[h];
+      for(var j3=0;j3<n;j3++){ if(j3!==w2){ net[w2]+=state.bonuses.long; net[j3]-=state.bonuses.long; } }
+    }
+    return net;
+  }
+
+  function combinedHoleDeltas(h){
+    var a = pairwiseHoleDeltas(h);
+    var b = bonusDeltas(h);
+    return a.map(function(v,idx){ return v+b[idx]; });
+  }
+
+  // totals: money totals (handicap baseline + all confirmed holes)
+  // strokesAbs: actual total strokes (par + relative), for the final result display
+  // relSum: cumulative +/- vs par, for the live in-round scoreboard
+  function totalsUpTo(hole){
+    var n = state.playerCount;
+    var totals = new Array(n).fill(0);
+    for(var k=0;k<n;k++){ totals[k] = state.handicaps[k]||0; }
+    var strokesAbs = new Array(n).fill(0);
+    var relSum = new Array(n).fill(0);
+    for(var h=1; h<=hole; h++){
+      if(!state.confirmedHoles[h]) continue;
+      var rel = state.scores[h];
+      var par = state.pars[h]||4;
+      var net = combinedHoleDeltas(h);
+      for(var k2=0;k2<n;k2++){
+        totals[k2]+=net[k2];
+        strokesAbs[k2]+=par+rel[k2];
+        relSum[k2]+=rel[k2];
+      }
+    }
+    return {totals:totals, strokesAbs:strokesAbs, relSum:relSum};
+  }
+
+  function updateRoundMeta(){
+    var text = (state.courseName? ('<b>'+escapeHtml(state.courseName)+'</b> · '):'') + fmtDate(state.roundDate);
+    $('roundMetaPlay').innerHTML = text;
+    $('roundMetaSummary').innerHTML = text;
+  }
+
+  // ---------- PLAY ----------
+  function renderPlay(){
+    updateRoundMeta();
+    var h = state.currentHole;
+    $('holeNum').textContent = h;
+    $('holeOf').textContent = '/ '+state.holeCount+'홀';
+    $('holePrev').disabled = h<=1;
+    $('holeNext').disabled = h>=state.holeCount;
+
+    document.querySelectorAll('.par-row .chip[data-par]').forEach(function(chip){
+      chip.setAttribute('aria-pressed', String(parseInt(chip.dataset.par,10)===(state.pars[h]||4)));
+      chip.onclick = function(){
+        state.pars[h] = parseInt(this.dataset.par,10);
+        renderPlay();
+      };
+    });
+
+    var obChip = $('obToggleChip');
+    obChip.hidden = !state.baepan.ob;
+    obChip.setAttribute('aria-pressed', String(!!state.manualOB[h]));
+    obChip.onclick = function(){
+      state.manualOB[h] = !state.manualOB[h];
+      renderPlay();
+    };
+
+    var rows = $('scoreRows');
+    rows.innerHTML = '';
+    for(var i=0;i<state.playerCount;i++){
+      (function(i){
+        var row = document.createElement('div');
+        row.className = 'score-row';
+
+        var namePart = document.createElement('div');
+        namePart.className = 'name-part';
+        var dot = document.createElement('div');
+        dot.className='dot'; dot.style.background = PALETTE[i%PALETTE.length];
+        var name = document.createElement('div');
+        name.className='pname'; name.textContent = state.names[i]||('플레이어'+(i+1));
+        namePart.appendChild(dot); namePart.appendChild(name);
+
+        var stepRow = document.createElement('div');
+        stepRow.className='stepper-row';
+        var minus = document.createElement('button');
+        minus.className='stepper-btn'; minus.textContent='−'; minus.setAttribute('aria-label','타수 감소');
+        var val = document.createElement('div');
+        val.className='stepper-val'; val.textContent = fmtRel(state.scores[h][i]);
+        var plus = document.createElement('button');
+        plus.className='stepper-btn'; plus.textContent='+'; plus.setAttribute('aria-label','타수 증가');
+        minus.addEventListener('click', function(){
+          if(state.scores[h][i]>SCORE_MIN){ state.scores[h][i]--; renderPlay(); }
+        });
+        plus.addEventListener('click', function(){
+          if(state.scores[h][i]<SCORE_MAX){ state.scores[h][i]++; renderPlay(); }
+        });
+        stepRow.appendChild(minus); stepRow.appendChild(val); stepRow.appendChild(plus);
+
+        row.appendChild(namePart); row.appendChild(stepRow);
+
+        if(state.bonuses.near>0){
+          var nearBtn = document.createElement('button');
+          nearBtn.className='nl-toggle'; nearBtn.textContent='니어'; nearBtn.title='니어 선택';
+          nearBtn.setAttribute('aria-pressed', String(state.nearWinner[h]===i));
+          nearBtn.addEventListener('click', function(){
+            state.nearWinner[h] = (state.nearWinner[h]===i ? null : i);
+            renderPlay();
+          });
+          row.appendChild(nearBtn);
+        }
+        if(state.bonuses.long>0){
+          var longBtn = document.createElement('button');
+          longBtn.className='nl-toggle'; longBtn.textContent='롱기'; longBtn.title='롱기 선택';
+          longBtn.setAttribute('aria-pressed', String(state.longWinner[h]===i));
+          longBtn.addEventListener('click', function(){
+            state.longWinner[h] = (state.longWinner[h]===i ? null : i);
+            renderPlay();
+          });
+          row.appendChild(longBtn);
+        }
+
+        rows.appendChild(row);
+      })(i);
+    }
+
+    renderBaepanBadges(h);
+    renderBonusSummary(h);
+    refreshHoleMoney();
+    refreshLiveScoreboard();
+
+    $('nextHoleBtn').textContent = (h>=state.holeCount) ? '이 홀 확정 · 마지막 홀' : '이 홀 확정 →';
+  }
+
+  function renderBaepanBadges(h){
+    $('baepanBadge').hidden = !isHoleDoubled(h);
+
+    var condRow = $('condRow');
+    condRow.innerHTML = '';
+    if(!anyBaepanEnabled()){ return; }
+    var auto = autoConditionsForHole(h);
+    var defs = [
+      {key:'birdie', label:'버디', on:auto.birdie},
+      {key:'tie3', label:'동타 3명', on:auto.tie3},
+      {key:'triple', label:'트리플', on:auto.triple},
+      {key:'ob', label:'OB', on:!!state.manualOB[h]}
+    ];
+    defs.forEach(function(d){
+      if(!state.baepan[d.key]) return;
+      var b = document.createElement('div');
+      b.className = 'cond-badge'+(d.on?' on':'');
+      b.textContent = d.label+(d.on?' ✓':'');
+      condRow.appendChild(b);
+    });
+  }
+
+  function renderBonusSummary(h){
+    var el = $('bonusSummary');
+    var parts = [];
+    if(state.bonuses.birdie>0){
+      var names = [];
+      for(var i=0;i<state.playerCount;i++){ if(state.scores[h][i]<=-1) names.push(state.names[i]||('P'+(i+1))); }
+      if(names.length) parts.push('🐦 버디 '+names.join(', '));
+    }
+    if(state.bonuses.near>0 && state.nearWinner[h]!=null){
+      parts.push('니어 '+(state.names[state.nearWinner[h]]||''));
+    }
+    if(state.bonuses.long>0 && state.longWinner[h]!=null){
+      parts.push('롱기 '+(state.names[state.longWinner[h]]||''));
+    }
+    el.textContent = parts.join('   ');
+    el.hidden = parts.length===0;
+  }
+
+  function refreshHoleMoney(){
+    var h = state.currentHole;
+    var net = combinedHoleDeltas(h);
+    var transfers = computeSettlement(net);
+    var byPayer = {};
+    transfers.forEach(function(t){ (byPayer[t.from]=byPayer[t.from]||[]).push(t); });
+
+    var box = $('holeMoney');
+    box.innerHTML = '';
+    var titleRow = document.createElement('div');
+    titleRow.style.fontWeight='700'; titleRow.style.color='var(--ink)'; titleRow.style.marginBottom='2px';
+    titleRow.textContent = '이번 홀 정산' + (isHoleDoubled(h)?' (2배 적용)':'');
+    box.appendChild(titleRow);
+
+    for(var i=0;i<state.playerCount;i++){
+      var line = document.createElement('div');
+      line.className='line';
+
+      var payer = document.createElement('div');
+      payer.className='payer';
+      var nameSpan = document.createElement('span');
+      nameSpan.className='pname-inline';
+      nameSpan.textContent = state.names[i]||('플레이어'+(i+1));
+      payer.appendChild(nameSpan);
+      if(byPayer[i]){
+        byPayer[i].forEach(function(t){
+          var toSpan = document.createElement('span');
+          toSpan.className='to-list';
+          toSpan.textContent = 'to '+(state.names[t.to]||('P'+(t.to+1)))+' '+t.amt.toLocaleString('ko-KR')+'원';
+          payer.appendChild(toSpan);
+        });
+      }
+
+      var b = document.createElement('b');
+      b.textContent = fmt(net[i]);
+      b.style.color = net[i]>0?'var(--win)':(net[i]<0?'var(--lose)':'var(--muted)');
+
+      line.appendChild(payer); line.appendChild(b);
+      box.appendChild(line);
+    }
+  }
+
+  function refreshLiveScoreboard(){
+    var res = totalsUpTo(state.currentHole);
+    renderScoreboard('liveScoreboard', res.totals, res.relSum, 'rel');
+  }
+
+  function renderScoreboard(elId, totals, counts, mode){
+    var el = $(elId);
+    el.innerHTML = '';
+    var order = totals.map(function(t,idx){return idx;}).sort(function(a,b){return totals[b]-totals[a];});
+    order.forEach(function(idx, rank){
+      var row = document.createElement('div');
+      row.className='sb-row';
+      var rankEl = document.createElement('div'); rankEl.className='rank'; rankEl.textContent=(rank+1);
+      var dot = document.createElement('div'); dot.className='dot'; dot.style.width='9px';dot.style.height='9px';dot.style.borderRadius='50%'; dot.style.background=PALETTE[idx%PALETTE.length]; dot.style.flex='none';
+      var name = document.createElement('div'); name.className='pname'; name.textContent = state.names[idx]||('플레이어'+(idx+1));
+      var st = document.createElement('div'); st.className='strokes';
+      st.textContent = (mode==='rel') ? fmtRel(counts[idx]) : (counts[idx]+'타');
+      var money = document.createElement('div'); money.className='money '+moneyClass(totals[idx]); money.textContent = fmt(totals[idx]);
+      row.appendChild(rankEl); row.appendChild(dot); row.appendChild(name); row.appendChild(st); row.appendChild(money);
+      el.appendChild(row);
+    });
+  }
+
+  $('holePrev').addEventListener('click', function(){
+    if(state.currentHole>1){ state.currentHole--; renderPlay(); }
+  });
+  $('holeNext').addEventListener('click', function(){
+    if(state.currentHole<state.holeCount){ state.currentHole++; renderPlay(); }
+  });
+
+  function confirmHole(h){
+    if(state.baepan.timing==='next' && conditionsTriggered(h) && (h+1)<=state.holeCount){
+      state.nextHoleDoubleFlag[h+1] = true;
+    }
+    state.confirmedHoles[h] = true;
+  }
+
+  $('nextHoleBtn').addEventListener('click', function(){
+    confirmHole(state.currentHole);
+    persistCurrent();
+    if(state.currentHole<state.holeCount){
+      state.currentHole++;
+      renderPlay();
+    } else {
+      finishRound();
+    }
+  });
+  $('endRoundBtn').addEventListener('click', function(){
+    confirmHole(state.currentHole);
+    finishRound();
+  });
+
+  // ---------- SUMMARY ----------
+  function finishRound(){
+    var res = totalsUpTo(state.holeCount);
+    state.lastResultTotals = res.totals;
+    state.lastResultStrokes = res.strokesAbs;
+    persistCurrent();
+    saveToHistory(res.totals, res.strokesAbs);
+    showScreen('summary');
+  }
+
+  function renderSummaryFromState(){
+    updateRoundMeta();
+    var totals = state.lastResultTotals || new Array(state.playerCount).fill(0);
+    var strokes = state.lastResultStrokes || new Array(state.playerCount).fill(0);
+    renderScoreboardMedals(totals, strokes);
+    renderSettlement(totals);
+    renderHoleLog();
+    $('sharePanel').hidden = true;
+  }
+
+  function renderScoreboardMedals(totals, strokes){
+    var el = $('finalScoreboard');
+    el.innerHTML = '';
+    var medals = ['🥇','🥈','🥉'];
+    var order = totals.map(function(t,idx){return idx;}).sort(function(a,b){return totals[b]-totals[a];});
+    order.forEach(function(idx, rank){
+      var row = document.createElement('div');
+      row.className='final-row';
+      var medal = document.createElement('div'); medal.className='medal'; medal.textContent = rank<3?medals[rank]:(rank+1)+'';
+      var meta = document.createElement('div'); meta.className='meta';
+      var pn = document.createElement('div'); pn.className='pname'; pn.textContent = state.names[idx]||('플레이어'+(idx+1));
+      var st = document.createElement('div'); st.className='strokes'; st.textContent = strokes[idx]+'타';
+      meta.appendChild(pn); meta.appendChild(st);
+      var money = document.createElement('div'); money.className='money '+moneyClass(totals[idx]); money.textContent = fmt(totals[idx]);
+      row.appendChild(medal); row.appendChild(meta); row.appendChild(money);
+      el.appendChild(row);
+    });
+  }
+
+  function computeSettlement(totals){
+    var creditors = [], debtors = [];
+    var bal = totals.map(function(t,idx){ return {idx:idx, amt:t}; });
+    bal.forEach(function(b){
+      if(b.amt>0) creditors.push({idx:b.idx, amt:b.amt});
+      else if(b.amt<0) debtors.push({idx:b.idx, amt:-b.amt});
+    });
+    creditors.sort(function(a,b){return b.amt-a.amt;});
+    debtors.sort(function(a,b){return b.amt-a.amt;});
+    var ci=0, di=0;
+    var transfers = [];
+    while(ci<creditors.length && di<debtors.length){
+      var c = creditors[ci], d = debtors[di];
+      var amt = Math.min(c.amt, d.amt);
+      if(amt>0.5){
+        transfers.push({from:d.idx, to:c.idx, amt:Math.round(amt)});
+      }
+      c.amt-=amt; d.amt-=amt;
+      if(c.amt<=0.5) ci++;
+      if(d.amt<=0.5) di++;
+    }
+    return transfers;
+  }
+
+  function renderSettlement(totals){
+    var transfers = computeSettlement(totals);
+    var list = $('settleList');
+    list.innerHTML = '';
+    if(transfers.length===0){
+      var none = document.createElement('div');
+      none.className='settle-item';
+      none.textContent = '정산할 금액이 없습니다.';
+      list.appendChild(none);
+    }
+    transfers.forEach(function(t){
+      var item = document.createElement('div');
+      item.className='settle-item';
+      var from = document.createElement('b'); from.textContent = state.names[t.from]||('플레이어'+(t.from+1));
+      var arrow = document.createElement('span'); arrow.className='arrow'; arrow.textContent=' → ';
+      var to = document.createElement('b'); to.textContent = state.names[t.to]||('플레이어'+(t.to+1));
+      var amt = document.createElement('span'); amt.className='amt'; amt.textContent = t.amt.toLocaleString('ko-KR')+'원';
+      item.appendChild(from); item.appendChild(arrow); item.appendChild(to); item.appendChild(amt);
+      list.appendChild(item);
+    });
+  }
+
+  function renderHoleLog(){
+    var el = $('holeLog');
+    el.innerHTML = '';
+    for(var h=1; h<=state.holeCount; h++){
+      if(!state.confirmedHoles[h]) continue;
+      var par = state.pars[h]||4;
+      var row = document.createElement('div');
+      row.className='hole-log-row';
+      var hn = document.createElement('div'); hn.className='hn'; hn.textContent = h+'H·파'+par;
+      var scores = document.createElement('div'); scores.className='scores';
+      var parts = [];
+      for(var i=0;i<state.playerCount;i++){
+        parts.push((state.names[i]||('P'+(i+1)))+' '+(par+state.scores[h][i]));
+      }
+      scores.textContent = parts.join('  ·  ');
+      row.appendChild(hn); row.appendChild(scores);
+      if(isHoleDoubled(h)){
+        var x2 = document.createElement('div'); x2.className='x2'; x2.textContent='2배';
+        row.appendChild(x2);
+      }
+      el.appendChild(row);
+    }
+  }
+
+  $('newRoundBtn').addEventListener('click', function(){
+    safeRemove('golfCurrentRound');
+    navStack = [];
+    activeScreen = 'setup';
+    applyScreen('setup');
+    $('backBtn').hidden = true;
+  });
+
+  // ---------- SHARE ----------
+  function buildShareText(){
+    var totals = state.lastResultTotals || [];
+    var strokes = state.lastResultStrokes || [];
+    var lines = [];
+    lines.push('⛳ 라운딩 정산 결과');
+    var headBits = [];
+    if(state.courseName) headBits.push(state.courseName);
+    if(state.roundDate) headBits.push(fmtDate(state.roundDate));
+    if(headBits.length) lines.push(headBits.join(' · '));
+    lines.push(state.holeCount+'홀 · '+state.unit.toLocaleString('ko-KR')+'원/타');
+    lines.push('');
+    lines.push('[최종 결과]');
+    var order = totals.map(function(t,idx){return idx;}).sort(function(a,b){return totals[b]-totals[a];});
+    order.forEach(function(idx, rank){
+      var name = state.names[idx]||('플레이어'+(idx+1));
+      lines.push((rank+1)+'위 '+name+'  '+(strokes[idx]||0)+'타  '+fmt(totals[idx]));
+    });
+    lines.push('');
+    lines.push('[정산 방법]');
+    var transfers = computeSettlement(totals);
+    if(transfers.length===0){
+      lines.push('정산할 금액 없음');
+    } else {
+      transfers.forEach(function(t){
+        lines.push((state.names[t.from]||'')+' → '+(state.names[t.to]||'')+'  '+t.amt.toLocaleString('ko-KR')+'원');
+      });
+    }
+    return lines.join('\n');
+  }
+
+  $('shareBtn').addEventListener('click', function(){
+    var text = buildShareText();
+    if(navigator.share){
+      navigator.share({ title:'라운딩 정산 결과', text:text }).catch(function(){
+        openSharePanel(text);
+      });
+    } else {
+      openSharePanel(text);
+    }
+  });
+
+  function openSharePanel(text){
+    $('sharePanel').hidden = false;
+    $('shareText').value = text;
+    $('copyNote').textContent = '';
+    var subject = encodeURIComponent('라운딩 정산 결과');
+    var body = encodeURIComponent(text);
+    $('mailLink').href = 'mailto:?subject='+subject+'&body='+body;
+  }
+
+  $('copyBtn').addEventListener('click', function(){
+    var text = $('shareText').value;
+    var noted = false;
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){
+          $('copyNote').textContent = '복사됐어요. 카카오톡 등에 붙여넣기 하세요.';
+        }).catch(function(){ fallbackCopy(); });
+        noted = true;
+      }
+    }catch(e){}
+    if(!noted){ fallbackCopy(); }
+    function fallbackCopy(){
+      try{
+        var ta = $('shareText');
+        ta.focus(); ta.select();
+        document.execCommand('copy');
+        $('copyNote').textContent = '복사됐어요. 카카오톡 등에 붙여넣기 하세요.';
+      }catch(e){
+        $('copyNote').textContent = '자동 복사에 실패했어요. 위 텍스트를 길게 눌러 직접 복사해주세요.';
+      }
+    }
+  });
+
+  // ---------- PERSISTENCE ----------
+  function persistCurrent(){
+    safeSet('golfCurrentRound', JSON.stringify(state));
+  }
+  function loadCurrent(){
+    var raw = safeGet('golfCurrentRound');
+    if(!raw) return false;
+    try{
+      var saved = JSON.parse(raw);
+      if(saved && saved.scores && Object.keys(saved.scores).length){
+        Object.assign(state, saved);
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+
+  function saveToHistory(totals, strokes){
+    var raw = safeGet('golfRounds');
+    var list = [];
+    try{ list = raw?JSON.parse(raw):[]; }catch(e){ list=[]; }
+    var record = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      roundDate: state.roundDate,
+      courseName: state.courseName,
+      names: state.names.slice(0,state.playerCount),
+      handicaps: state.handicaps.slice(0,state.playerCount),
+      totals: totals,
+      strokes: strokes,
+      unit: state.unit,
+      bonuses: state.bonuses,
+      holeCount: state.holeCount,
+      pars: state.pars,
+      scores: state.scores,
+      confirmedHoles: state.confirmedHoles,
+      manualOB: state.manualOB,
+      nextHoleDoubleFlag: state.nextHoleDoubleFlag,
+      baepan: state.baepan,
+      nearWinner: state.nearWinner,
+      longWinner: state.longWinner,
+      playerCount: state.playerCount
+    };
+    list.unshift(record);
+    if(list.length>30) list = list.slice(0,30);
+    safeSet('golfRounds', JSON.stringify(list));
+  }
+
+  // ---------- HISTORY SCREEN ----------
+  $('historyBtn').addEventListener('click', function(){
+    showScreen('history');
+  });
+
+  function renderHistory(){
+    var raw = safeGet('golfRounds');
+    var list = [];
+    try{ list = raw?JSON.parse(raw):[]; }catch(e){ list=[]; }
+    var box = $('historyList');
+    box.innerHTML = '';
+    if(list.length===0){
+      var empty = document.createElement('div');
+      empty.className='empty-note';
+      empty.textContent = '아직 저장된 라운딩이 없어요.';
+      box.appendChild(empty);
+      return;
+    }
+    list.forEach(function(r){
+      var btn = document.createElement('button');
+      btn.className='hist-item';
+      var meta = document.createElement('div'); meta.className='meta';
+      var date = document.createElement('div'); date.className='date';
+      var d = new Date(r.date);
+      var dateLabel = r.roundDate ? fmtDate(r.roundDate) : (d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate());
+      date.textContent = (r.courseName? (r.courseName+' · '):'') + dateLabel + '  ·  ' + r.holeCount+'홀  ·  '+r.unit.toLocaleString('ko-KR')+'원/타';
+      var players = document.createElement('div'); players.className='players';
+      players.textContent = r.names.join(', ');
+      var topIdx = r.totals.indexOf(Math.max.apply(null,r.totals));
+      var top = document.createElement('div'); top.className='top';
+      top.textContent = (r.totals[topIdx]>0? (r.names[topIdx]+' +'+r.totals[topIdx].toLocaleString('ko-KR')+'원 우승') : '무승부');
+      meta.appendChild(date); meta.appendChild(players); meta.appendChild(top);
+      btn.appendChild(meta);
+      btn.addEventListener('click', function(){
+        loadHistoryRecord(r);
+      });
+      box.appendChild(btn);
+    });
+  }
+
+  function loadHistoryRecord(r){
+    state.playerCount = r.playerCount;
+    state.names = r.names.slice();
+    state.handicaps = r.handicaps ? r.handicaps.slice() : new Array(r.playerCount).fill(0);
+    state.unit = r.unit;
+    state.bonuses = r.bonuses || { near:0, birdie:0, long:0 };
+    state.holeCount = r.holeCount;
+    state.roundDate = r.roundDate || '';
+    state.courseName = r.courseName || '';
+    state.pars = r.pars || {};
+    state.scores = r.scores;
+    state.confirmedHoles = r.confirmedHoles;
+    state.manualOB = r.manualOB || {};
+    state.nextHoleDoubleFlag = r.nextHoleDoubleFlag || {};
+    state.baepan = r.baepan || { birdie:false, tie3:false, triple:false, ob:false, timing:'current' };
+    state.nearWinner = r.nearWinner || {};
+    state.longWinner = r.longWinner || {};
+    state.lastResultTotals = r.totals;
+    state.lastResultStrokes = r.strokes;
+    showScreen('summary');
+  }
+
+  // ---------- BOOT ----------
+  function boot(data){
+    if(data && data.state){
+      Object.assign(state, data.state);
+    }
+    renderNameList();
+    $('roundDateInput').value = state.roundDate;
+    $('courseNameInput').value = state.courseName;
+    $('bonusNear').value = state.bonuses.near;
+    $('bonusBirdie').value = state.bonuses.birdie;
+    $('bonusLong').value = state.bonuses.long;
+    $('pcVal').textContent = state.playerCount;
+    $('unitInput').value = state.unit;
+    updateHoleChips();
+    updateBaepanChips();
+
+    var hasCurrent = loadCurrent();
+    if(hasCurrent){
+      renderNameList();
+      $('roundDateInput').value = state.roundDate;
+      $('courseNameInput').value = state.courseName;
+      $('bonusNear').value = state.bonuses.near;
+      $('bonusBirdie').value = state.bonuses.birdie;
+      $('bonusLong').value = state.bonuses.long;
+      activeScreen = 'play';
+      applyScreen('play');
+    } else {
+      activeScreen = 'setup';
+      applyScreen('setup');
+    }
+  }
+
+  try{
+    if(window.claude && window.claude.hot){
+      window.claude.hot.snapshot(function(){ return {state:state}; });
+      window.claude.hot.ready ? window.claude.hot.ready(boot) : boot(window.claude.hot.data||{});
+    } else {
+      boot({});
+    }
+  }catch(e){
+    boot({});
+  }
+})();
+</script>
