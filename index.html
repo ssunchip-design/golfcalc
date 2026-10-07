@@ -437,6 +437,14 @@
   .settle-item .amt{ margin-left:auto;  font-weight:700; color:var(--gold); }
 
   /* History */
+  .hist-row{ display:flex; align-items:stretch; gap:6px; }
+  .hist-row .hist-item{ flex:1; min-width:0; }
+  .hist-del{
+    flex:none; width:40px; display:flex; align-items:center; justify-content:center; cursor:pointer;
+    border:1px solid var(--line); border-radius:4px; background:var(--surface-2); color:var(--muted);
+  }
+  .hist-del svg{ width:17px; height:17px; }
+  .hist-del:active{ background:var(--lose-bg); color:var(--lose); border-color:var(--lose); }
   .hist-item{
     display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:4px;
     background:var(--surface-2); cursor:pointer; text-align:left; border:none; width:100%; color:var(--ink);
@@ -1119,9 +1127,10 @@
     return false;
   }
   var pendingConfirm = null;
-  function askConfirm(title, desc, onYes){
+  function askConfirm(title, desc, onYes, okLabel){
     $('confirmTitle').textContent = title;
     $('confirmDesc').textContent = desc;
+    $('confirmYes').textContent = okLabel || '초기화';
     pendingConfirm = onYes;
     $('confirmModal').hidden = false;
   }
@@ -3144,7 +3153,9 @@
       box.appendChild(empty);
       return;
     }
-    list.forEach(function(r){
+    list.forEach(function(r, idx){
+      var rowWrap = document.createElement('div');
+      rowWrap.className = 'hist-row';
       var btn = document.createElement('button');
       btn.className='hist-item';
       var meta = document.createElement('div'); meta.className='meta';
@@ -3165,10 +3176,35 @@
       btn.addEventListener('click', function(){
         loadHistoryRecord(r);
       });
-      box.appendChild(btn);
+      var del = document.createElement('button');
+      del.className = 'hist-del';
+      del.type = 'button';
+      del.setAttribute('aria-label', '이 기록 삭제');
+      del.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+      del.addEventListener('click', function(e){
+        e.stopPropagation();
+        askConfirm('이 기록을 삭제할까요?',
+          (r.courseName ? r.courseName+' · ' : '') + dateLabel + ' 기록이 영구히 지워져요.',
+          function(){ deleteHistoryRecord(r, idx); }, '삭제');
+      });
+      rowWrap.appendChild(btn); rowWrap.appendChild(del);
+      box.appendChild(rowWrap);
     });
   }
 
+  function deleteHistoryRecord(r, idx){
+    var raw = safeGet('golfRounds'), list = [];
+    try{ list = raw?JSON.parse(raw):[]; }catch(e){ list=[]; }
+    var next;
+    if(r && r.id!=null){
+      next = list.filter(function(x){ return x.id !== r.id; });
+      if(next.length===list.length) next = list.filter(function(x,i){ return i!==idx; });
+    } else {
+      next = list.filter(function(x,i){ return i!==idx; });
+    }
+    safeSet('golfRounds', JSON.stringify(next));
+    renderHistory();
+  }
   function loadHistoryRecord(r){
     state.playerCount = r.playerCount;
     state.names = r.names.slice();
