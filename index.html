@@ -172,6 +172,42 @@
   .nl-toggle.oc[aria-pressed="true"]{ background:var(--lose); border-color:var(--lose); color:#fff; }
   .oc-row{ display:flex; gap:4px; flex:none; }
   #oecdCondChips .chip.small{ padding:6px 9px; font-size:12px; }
+  /* ---- 팀 뽑기 룰렛 ---- */
+  .draw-overlay{ position:fixed; inset:0; z-index:95; display:flex; align-items:center; justify-content:center;
+                 background:rgba(6,16,11,.74); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+                 transition:background .45s ease, backdrop-filter .45s ease; }
+  .draw-overlay[hidden]{ display:none; }
+  .draw-overlay.fading{ background:rgba(6,16,11,0); -webkit-backdrop-filter:blur(0); backdrop-filter:blur(0); pointer-events:none; }
+  .draw-stage{ display:flex; flex-direction:column; align-items:center; gap:20px;
+               transition:opacity .4s ease, transform .4s ease; }
+  .draw-overlay.fading .draw-stage{ opacity:0; transform:scale(.7); }
+  .roulette-wrap{ position:relative; width:216px; height:216px; display:flex; align-items:center; justify-content:center; }
+  .roulette{ position:absolute; inset:0; border-radius:50%;
+             background:conic-gradient(#C0392B 0deg 72deg, #2E6DA4 72deg 144deg, #15171A 144deg 216deg,
+                                       #C0392B 216deg 288deg, #2E6DA4 288deg 360deg);
+             box-shadow:0 0 0 5px rgba(246,241,228,.92), 0 16px 44px rgba(0,0,0,.55), 0 0 70px rgba(242,213,140,.3); }
+  .roulette.spin{ animation:rouletteSpin 2.6s cubic-bezier(.16,.72,.18,1) forwards; }
+  @keyframes rouletteSpin{ from{ transform:rotate(0deg); } to{ transform:rotate(2556deg); } }
+  .roulette-hub{ position:relative; z-index:2; width:66px; height:66px; border-radius:50%;
+                 background:#F6F1E4; color:#17241C; display:flex; align-items:center; justify-content:center;
+                 font-size:28px; box-shadow:0 3px 12px rgba(0,0,0,.45); }
+  .roulette-pin{ position:absolute; top:-10px; left:50%; margin-left:-9px; width:0; height:0; z-index:3;
+                 border-left:9px solid transparent; border-right:9px solid transparent; border-top:18px solid #F2D58C;
+                 filter:drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
+  .draw-caption{ color:#F6F1E4; font-size:16px; font-weight:800; letter-spacing:-.3px; text-shadow:0 2px 10px rgba(0,0,0,.6); }
+  .draw-orb{ position:fixed; z-index:96; width:28px; height:28px; margin:-14px 0 0 -14px; border-radius:50%;
+             pointer-events:none; display:flex; align-items:center; justify-content:center;
+             font-size:12px; line-height:1; font-weight:900; color:#fff;
+             transition:transform .78s cubic-bezier(.26,.86,.36,1), opacity .22s ease; }
+  .draw-orb.land{ animation:orbLand .34s ease forwards; }
+  @keyframes orbLand{ 0%{ opacity:1; } 45%{ transform:scale(1.9); opacity:.95; } 100%{ transform:scale(2.6); opacity:0; } }
+  .ball.pop{ animation:ballPop .42s cubic-bezier(.2,1.5,.4,1); }
+  @keyframes ballPop{ 0%{ transform:scale(.3); opacity:0; } 60%{ transform:scale(1.12); opacity:1; } 100%{ transform:scale(1); } }
+  @media (prefers-reduced-motion: reduce){
+    .roulette.spin{ animation-duration:.01s; }
+    .draw-orb{ transition:none; }
+  }
+
   .modal-back{ position:fixed; inset:0; z-index:90; background:rgba(8,18,13,.55);
                display:flex; align-items:center; justify-content:center; padding:24px; }
   .modal-back[hidden]{ display:none; }
@@ -224,6 +260,95 @@
     background:var(--surface-2); color:var(--ink); font-size:16px; cursor:pointer;
   }
   .hole-nav .nav-btn[disabled]{ opacity:.3; }
+  .hole-center{ display:flex; align-items:center; justify-content:center; gap:12px; min-width:0; }
+  .order-btn{
+    display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px; border-radius:4px; cursor:pointer;
+    border:1px solid var(--gold); background:var(--gold); color:var(--accent-ink);
+    font-family:inherit; font-size:12px; font-weight:800; line-height:1; letter-spacing:-.2px;
+    box-shadow:0 2px 10px rgba(216,181,112,.35); white-space:nowrap;
+  }
+  .order-btn b{ font-size:14px; line-height:1; }
+  .order-btn:active{ transform:translateY(1px); }
+  .ud-roster{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .ud-col{ border:1px solid var(--line); border-radius:4px; padding:8px; background:var(--surface-2); }
+  .ud-col.R{ border-color:var(--red); --eye:var(--surface-2); }
+  .ud-col.B{ border-color:var(--blue); --eye:var(--surface-2); }
+  .ud-head{ display:flex; align-items:center; justify-content:center; gap:4px;
+            font-size:12px; font-weight:800; margin-bottom:7px; }
+  .ud-head .ic{ width:17px; height:17px; }
+  .ud-col.R .ud-head{ color:var(--red); }
+  .ud-col.B .ud-head{ color:var(--blue); }
+  .ud-name{ display:flex; align-items:center; gap:6px; }
+  .ud-name .dot{ width:9px; height:9px; border-radius:50%; flex:none; }
+  .ud-name + .ud-name{ margin-top:6px; }
+  .ud-name input{ flex:1; min-width:0; height:38px; padding:0 8px; font-family:inherit; font-size:14px;
+                  border:1px solid var(--line); border-radius:3px; background:var(--surface); color:var(--ink); }
+
+  /* 홀 화면 업다운 배너 */
+  .ud-banner{ display:grid; grid-template-columns:1fr auto 1fr; align-items:stretch; gap:6px;
+              margin:8px 0 10px; }
+  .ud-side{ position:relative; overflow:hidden; border-radius:6px; padding:10px 8px 11px; text-align:center;
+            border:1px solid var(--line); background:var(--surface-2); }
+  .ud-side .nm{ display:flex; align-items:center; justify-content:center; gap:4px;
+                font-size:11.5px; font-weight:800; letter-spacing:-.2px; opacity:.85; }
+  .ud-side .nm .ic{ width:16px; height:16px; }
+  .ud-side .val{ margin-top:3px; font-size:30px; font-weight:900; line-height:1.05; letter-spacing:-1px; }
+  .ud-side .sub{ font-size:10.5px; font-weight:700; opacity:.7; }
+  .ud-side .mem{ margin-top:2px; font-size:10.5px; font-weight:700; opacity:.75;
+                 overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ud-side .crown{ position:absolute; top:5px; right:6px; z-index:1; font-size:9px; font-weight:900;
+                   letter-spacing:.6px; padding:1px 5px; border-radius:8px;
+                   background:rgba(255,255,255,.22); color:#fff; }
+  .ud-banner.hole .val{ font-size:26px; }
+  .ud-side.R{ --eye:var(--surface-2); color:var(--red); }
+  .ud-side.B{ --eye:var(--surface-2); color:var(--blue); }
+  .ud-side.lead{ color:#fff; border-color:transparent;
+                 box-shadow:0 6px 18px rgba(0,0,0,.22), inset 0 0 0 1px rgba(255,255,255,.18); }
+  .ud-side.R.lead{ background:linear-gradient(145deg,#D4493A,#8E2B20); --eye:#B03A2E; }
+  .ud-side.B.lead{ background:linear-gradient(145deg,#3E7FB8,#1F4E78); --eye:#2E6DA4; }
+  .ud-side.lead::after{ content:''; position:absolute; inset:0; pointer-events:none;
+     background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.3) 50%,transparent 65%);
+     transform:translateX(-120%); animation:udShine 2.6s ease-in-out infinite; }
+  @keyframes udShine{ 0%{transform:translateX(-120%)} 55%,100%{transform:translateX(120%)} }
+  .ud-side.even{ color:var(--muted); }
+  .ud-vs{ display:flex; align-items:center; justify-content:center; width:34px;
+          font-size:12px; font-weight:900; color:var(--muted); }
+  .ud-allsq{ text-align:center; font-size:12.5px; font-weight:800; color:var(--gold);
+             letter-spacing:.5px; margin:-4px 0 8px; }
+  @media (prefers-reduced-motion: reduce){ .ud-side.lead::after{ animation:none; display:none; } }
+
+  .up-tag{ display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:20px;
+           padding:0 7px; border-radius:10px; font-size:11px; font-weight:900; letter-spacing:-.2px;
+           background:var(--surface-2); color:var(--muted); }
+  .up-tag.win{ background:var(--win-bg); color:var(--win); }
+  .up-tag.lose{ background:var(--lose-bg); color:var(--lose); }
+  .team-pick{ display:flex; gap:4px; flex:none; }
+  .team-pick .tp{
+    display:inline-flex; align-items:center; gap:3px; height:28px; padding:0 8px; cursor:pointer;
+    border:1px solid var(--line); border-radius:3px; background:var(--surface-2); color:var(--muted);
+    font-family:inherit; font-size:11px; font-weight:700; white-space:nowrap;
+  }
+  .team-pick .tp .ic{ width:15px; height:15px; margin-left:-2px; }
+  .team-pick .tp.R{ --eye:var(--surface-2); }
+  .team-pick .tp.B{ --eye:var(--surface-2); }
+  .team-pick .tp.R[aria-pressed="true"]{ background:var(--red); border-color:var(--red); color:#fff; --eye:var(--red); }
+  .team-pick .tp.B[aria-pressed="true"]{ background:var(--blue); border-color:var(--blue); color:#fff; --eye:var(--blue); }
+  .match-note{ margin-top:6px; font-size:12px; color:var(--lose); font-weight:600; }
+  .tee-order{
+    display:inline-flex; align-items:center; justify-content:center; flex:none;
+    min-width:22px; height:22px; padding:0 6px; border-radius:11px;
+    background:var(--gold); color:var(--accent-ink); font-size:11px; font-weight:900;
+  }
+  .tee-order.pop{ animation:ballPop .42s cubic-bezier(.2,1.5,.4,1); }
+  .order-ring{ position:absolute; inset:0; }
+  .order-ring.spin{ animation:rouletteSpin 2.6s cubic-bezier(.16,.72,.18,1) forwards; }
+  .order-num{
+    position:absolute; left:50%; top:50%; width:52px; height:52px; margin:-26px 0 0 -26px;
+    display:flex; align-items:center; justify-content:center; border-radius:50%;
+    background:#F2D58C; color:#17241C; font-size:24px; font-weight:900;
+    box-shadow:0 0 18px 4px rgba(242,213,140,.55), 0 4px 14px rgba(0,0,0,.45);
+  }
+  .draw-orb.num{ width:46px; height:46px; margin:-23px 0 0 -23px; font-size:21px; font-weight:900; }
   .hole-title{ text-align:center; }
   .hole-title .num{ font-size:26px; font-weight:700; }
   .hole-title .of{ font-size:12px; color:var(--muted); }
@@ -358,6 +483,9 @@
   .mode-intro{ text-align:center; }
   .mode-list{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
   .mode-list > .mode-card{ min-width:0; }
+  .mode-card[data-mode="updown"]{ grid-area:1 / 2; }
+  .mode-card[data-mode="team"]{ grid-area:2 / 1; }
+  .mode-card[data-mode="match"]{ grid-area:2 / 2; }
   .mode-card{
     position:relative; display:flex; flex-direction:column; align-items:center; text-align:center;
     width:100%; aspect-ratio:1/1; padding:8px 6px; justify-content:center; overflow:hidden;
@@ -365,6 +493,7 @@
     cursor:pointer; box-shadow:var(--shadow);
   }
   .mode-card .art{ display:flex; align-items:flex-end; justify-content:center; gap:2px; height:40px; margin-bottom:6px; --eye:var(--surface); }
+  .mode-card[data-mode="match"] .art{ align-items:center; }
   .mode-card .art .ic{ width:40px; height:40px; }
   .mode-card .art .ic.r{ color:var(--red); }
   .mode-card .art .ic.b{ color:var(--blue); }
@@ -437,6 +566,7 @@
   .handi-col > .money-spin{ width:100%; }
   .tb-list{ display:flex; flex-direction:column; gap:6px; }
   .tb-row{ display:grid; grid-template-columns:64px minmax(0,1fr) auto; align-items:center; gap:6px; }
+  .tb-row.solo{ grid-template-columns:64px minmax(0,1fr); }
   .tb-row .tb-name{ font-size:12px; font-weight:700; color:var(--ink); line-height:1.2; }
   .tb-row .tb-name small{ display:block; font-size:10px; font-weight:500; color:var(--muted); }
   .tb-row .money-spin input{ padding:8px 8px; font-size:14px; font-weight:700; text-align:right;
@@ -444,6 +574,13 @@
   .tb-row .chip-row{ flex-wrap:nowrap; gap:4px; }
   .tb-row .chip.small{ padding:6px 8px; font-size:12px; }
   .three-col .money-spin{ width:100%; }
+  #baepanCondChips{ flex-wrap:nowrap; gap:5px; overflow-x:auto; padding-bottom:2px;
+                    scrollbar-width:none; -ms-overflow-style:none; }
+  #baepanCondChips::-webkit-scrollbar{ display:none; }
+  #baepanCondChips{ gap:4px; }
+  #baepanCondChips .chip{ flex:1 1 0; min-width:0; padding:4px; font-size:11.5px; line-height:1.15;
+                          letter-spacing:-.4px; }
+  #baepanCondChips .chip small{ display:block; font-size:9px; line-height:1.1; margin-top:0; opacity:.7; letter-spacing:-.3px; }
 
   /* Achievements */
   .ach{ display:inline-flex; align-items:center; gap:2px; flex:none; }
@@ -556,15 +693,29 @@
       <button class="mode-card" data-mode="stroke">
         <div class="art"><svg class="ic g" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M11 3h2v22h-2z"/><path d="M13 3.5 25 8.2 13 13z"/><ellipse cx="12" cy="27" rx="9" ry="2.6" opacity=".35"/><circle cx="19.5" cy="26.2" r="1.3"/></svg></div>
         <div class="tag">STROKE</div>
-        <div class="t">스트로크</div>
+        <div class="t">스트로크(타당)</div>
         <div class="d">타수 차이 1:1 자동 정산<br>배판 · 니어 · 버디 · 롱기</div>
         <div class="go">시작하기 ›</div>
       </button>
       <button class="mode-card" data-mode="team">
-        <div class="art"><svg class="ic r" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M21 8.5c2.4 0 4 1.6 4.3 3.4l3.2 1-3.3 1c-.6 2.6-2.6 4.6-5.3 5.2l-4.6 2.4 1.6-4.3c-.5-.8-.8-1.8-.8-2.8 0-3.4 2.3-5.9 4.9-5.9z"/><path d="M20.4 8.7C19.3 6.2 19.6 3.9 21.2 2c-.3 2.2.1 4.2 1.3 6.2zM19 9.3C17.1 7.5 16.2 5.3 16.5 3c.7 2 1.9 3.7 3.6 5z"/><path d="M17.6 14.4C13 13.6 9.2 10.3 7.6 5.5c2.6 2.7 5.6 4.2 8.9 4.5-1.4-1.1-2.3-2.6-2.6-4.3 1.6 1.7 3.5 2.8 5.7 3.1z"/><path d="M16.4 19.2C12.3 22 8.2 22.6 3 21.6c3.6 1.9 7.2 2.1 10.6 1.3-3.2 2.4-6.8 4.6-11.4 5.6 4.6.4 8.8-1 12.1-3.4-1 2.4-2.9 4.4-5.1 5.9 4.2-.6 7.3-3.4 8.6-7.3z"/><circle class="eye" cx="22.3" cy="11.6" r="1"/></svg><svg class="ic b" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M5 31C5 23 8 15 14 10.5 16 9 18.5 8.6 21 9.2L29.5 12.4C30.2 12.7 30.1 13.7 29.3 13.8L21.5 15 28 17.6C28.7 17.9 28.5 18.9 27.7 18.9L19.5 19C17 21.5 14.5 24 13.5 31Z"/><path d="M15.5 10C12.5 7.5 10 5 8 2.5 11.5 3.8 14.5 5.8 17.5 8.8Z"/><path d="M13 12C10 10.5 7 9.5 4.5 9.5 7.5 8.3 10.8 8.6 14 10.3Z"/><path d="M24 15.3C26 17 25 21 21.5 22 23.5 20.5 23.8 18 22.8 16Z"/><path d="M9 17 5.5 16.5 8.2 19.5ZM7.2 22 3.8 22.3 6.8 24.6ZM6.3 27 3 27.8 6 29.6Z"/><circle class="eye" cx="19.6" cy="11.9" r="1.1"/></svg></div>
-        <div class="tag">TEAM</div>
+        <div class="art"><svg class="ic r" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M22.6 7.1c.2-2.7 1.5-4.8 3.9-6.4-.4 1.2-.5 2.3-.3 3.5 1.2-1.9 2.9-3.1 5.1-3.8-1.1 1.2-1.8 2.5-2.1 4 1.4-.9 2.9-1.4 4.5-1.3-3 1.5-5.1 3.5-6.3 6.1z"/><path d="M22.9 7.6c2 0 3.6 1.6 3.6 3.6 0 .5-.1 1-.3 1.5l5.2 1.1-5.5 1.8c-.8.7-1.9 1.1-3 1.1-2 0-3.6-1.6-3.6-3.6s1.6-3.6 3.6-3.6z"/><path d="M9.3 19.3c-.6-3.5 2.4-6.6 6.9-7.4 2.8-.5 5.4.2 7.1 1.7l-.6 5.1c-1.4 2.3-4.1 4.1-7.2 4.7-3.3.6-5.9-.8-6.2-4.1z"/><path d="M17.1 12.8C14.5 6.7 9.8 2.4 3.1 0c2.9 3.4 4.4 7 4.6 10.9-2.1-2.1-4.6-3.6-7.5-4.4 3.3 3.2 5.4 6.6 6.2 10.1-1.9-1.3-3.9-2.2-6-2.5 3.5 2.6 5.9 5.6 7.1 8.8z"/><path d="M12.3 20.9c-2.6 4.1-6.8 6.9-12.3 8.5 4.8.2 8.8-1 12-3.7-1.3 2.2-3.2 4-5.7 5.4 4.5-.9 7.6-3.5 9.2-7.7z"/><path d="M14.9 22.3c-1.2 4-4 7-8.5 9 4.4-.5 7.6-2.6 9.5-6.3zM17.3 22.5c.2 3.5-1 6.5-3.6 8.9 3.4-1.1 5.4-3.6 5.9-7.4z"/><circle class="eye" cx="24" cy="10.8" r="1.1"/></svg><svg class="ic b" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M5 31C5 23 8 15 14 10.5 16 9 18.5 8.6 21 9.2L29.5 12.4C30.2 12.7 30.1 13.7 29.3 13.8L21.5 15 28 17.6C28.7 17.9 28.5 18.9 27.7 18.9L19.5 19C17 21.5 14.5 24 13.5 31Z"/><path d="M15.5 10C12.5 7.5 10 5 8 2.5 11.5 3.8 14.5 5.8 17.5 8.8Z"/><path d="M13 12C10 10.5 7 9.5 4.5 9.5 7.5 8.3 10.8 8.6 14 10.3Z"/><path d="M24 15.3C26 17 25 21 21.5 22 23.5 20.5 23.8 18 22.8 16Z"/><path d="M9 17 5.5 16.5 8.2 19.5ZM7.2 22 3.8 22.3 6.8 24.6ZM6.3 27 3 27.8 6 29.6Z"/><circle class="eye" cx="19.6" cy="11.9" r="1.1"/></svg></div>
+        <div class="tag">DRAW</div>
         <div class="t">팀전(뽑기)</div>
         <div class="d">불사조 vs 푸른용<br>2:2 뽑기 · 판돈 · 조커</div>
+        <div class="go">시작하기 ›</div>
+      </button>
+      <button class="mode-card" data-mode="match">
+        <div class="art"><svg class="ic r" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="-6" y="13.4" width="16" height="8.2" rx="4.1"/><path d="M6 6.4 H18.4 a7 7 0 0 1 7 7 V11.45 h-3.2 a0.55 0.55 0 0 0 0 1.1 h3.2 V16.25 h-3.5 a0.55 0.55 0 0 0 0 1.1 h3.5 V21.05 h-3.2 a0.55 0.55 0 0 0 0 1.1 h3.2 V19.6 a7 7 0 0 1 -7 7 H6 z"/><rect x="6.5" y="4.2" width="9" height="6.2" rx="3.1"/><path d="M28.4 6.2l2.9-1.8-1.5 3.2zM28.4 25.8l2.9 1.8-1.5-3.2z"/></svg><svg class="ic b" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><g transform="translate(32,0) scale(-1,1)"><rect x="-6" y="13.4" width="16" height="8.2" rx="4.1"/><path d="M6 6.4 H18.4 a7 7 0 0 1 7 7 V11.45 h-3.2 a0.55 0.55 0 0 0 0 1.1 h3.2 V16.25 h-3.5 a0.55 0.55 0 0 0 0 1.1 h3.5 V21.05 h-3.2 a0.55 0.55 0 0 0 0 1.1 h3.2 V19.6 a7 7 0 0 1 -7 7 H6 z"/><rect x="6.5" y="4.2" width="9" height="6.2" rx="3.1"/><path d="M28.4 6.2l2.9-1.8-1.5 3.2zM28.4 25.8l2.9 1.8-1.5-3.2z"/></g></svg></div>
+        <div class="tag">MATCH</div>
+        <div class="t">팀전(매칭)</div>
+        <div class="d">팀을 직접 지정<br>전홀 고정 · 홀별 변경</div>
+        <div class="go">시작하기 ›</div>
+      </button>
+      <button class="mode-card" data-mode="updown">
+        <div class="art"><svg class="ic r" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 2 29 15.5h-7.5v15h-11v-15H3z"/></svg><svg class="ic b" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 30 3 16.5h7.5v-15h11v15H29z"/></svg></div>
+        <div class="tag">UP-DOWN</div>
+        <div class="t">업다운</div>
+        <div class="d">선입금 없이 홀마다<br>진 팀이 이긴 팀에 지급</div>
         <div class="go">시작하기 ›</div>
       </button>
     </div>
@@ -591,6 +742,14 @@
           <div class="stepper-val" id="pcVal">4</div>
           <button class="stepper-btn" id="pcPlus" aria-label="인원 늘리기">+</button>
           <span style="color:var(--muted);font-size:13px;">명</span>
+        </div>
+      </div>
+
+      <div class="field" id="matchModeField" hidden>
+        <label class="field-label">팀 구성 방식</label>
+        <div class="chip-row">
+          <button class="chip" data-mm="round">전홀 팀원 동일</button>
+          <button class="chip" data-mm="hole">홀별 팀원 구분</button>
         </div>
       </div>
 
@@ -628,37 +787,21 @@
       <div class="field" id="teamBirdieField" hidden>
         <label class="field-label">축하금</label>
         <div id="teamBonusList" class="tb-list"></div>
-        <div class="field-hint">총금액차감: 기록한 사람이 판돈에서 가져감 · 별도계산: 나머지 인원이 각자 지급.</div>
+        <div class="field-hint" id="bonusModeHint">총금액차감: 기록한 사람이 판돈에서 가져감 · 별도계산: 나머지 인원이 각자 지급.</div>
       </div>
     </div>
 
     <div class="card" id="bonusCard" style="margin-top:8px;">
       <div class="field" style="margin-top:0;">
         <label class="field-label">축하금 (1인당 받는 금액)</label>
-        <div class="three-col">
-          <div>
-            <label>버디</label>
-            <input type="number" class="text-input" id="bonusBirdie" value="0" min="0" step="500">
-          </div>
-          <div>
-            <label>니어</label>
-            <input type="number" class="text-input" id="bonusNear" value="0" min="0" step="500">
-          </div>
-          <div>
-            <label>롱기</label>
-            <input type="number" class="text-input" id="bonusLong" value="0" min="0" step="500">
-          </div>
+        <div class="tb-list">
+          <div class="tb-row solo"><div class="tb-name">버디</div><div><input type="number" id="bonusBirdie" inputmode="numeric" value="0" min="0" aria-label="버디 축하금"></div></div>
+          <div class="tb-row solo"><div class="tb-name">니어<small>파3</small></div><div><input type="number" id="bonusNear" inputmode="numeric" value="0" min="0" aria-label="니어 축하금"></div></div>
+          <div class="tb-row solo"><div class="tb-name">롱기<small>파5</small></div><div><input type="number" id="bonusLong" inputmode="numeric" value="0" min="0" aria-label="롱기 축하금"></div></div>
+          <div class="tb-row solo"><div class="tb-name">이글</div><div><input type="number" id="bonusEagle" inputmode="numeric" value="0" min="0" aria-label="이글 축하금"></div></div>
+          <div class="tb-row solo"><div class="tb-name">홀인원<small>(알바트로스)</small></div><div><input type="number" id="bonusHio" inputmode="numeric" value="0" min="0" aria-label="홀인원 축하금"></div></div>
         </div>
-        <div class="two-col" style="margin-top:6px;">
-          <div>
-            <label class="mini-label">이글</label>
-            <input type="number" class="text-input" id="bonusEagle" value="0" min="0" step="500">
-          </div>
-          <div>
-            <label class="mini-label">홀인원(알바트로스)</label>
-            <input type="number" class="text-input" id="bonusHio" value="0" min="0" step="500">
-          </div>
-        </div>
+        <div class="field-hint" style="margin-top:6px;">기록한 사람에게 나머지 인원이 각자 지급합니다.</div>
       </div>
     </div>
 
@@ -681,12 +824,12 @@
       <div class="field" style="margin-top:0;">
         <label class="field-label">배판 옵션</label>
         <div class="chip-row" id="baepanCondChips">
-          <button class="chip" data-cond="birdie">버디</button>
-          <button class="chip" data-cond="tie3">동타 3명<small>4인 플레이시</small></button>
-          <button class="chip" data-cond="tie2">동타 2명<small>3인 플레이시</small></button>
-          <button class="chip" data-cond="triple">트리플 이상</button>
-          <button class="chip" data-cond="ob">OB</button>
-          <button class="chip" data-cond="double3">더블(파3)</button>
+          <button class="chip" data-cond="birdie">버디<small>&nbsp;</small></button>
+          <button class="chip" data-cond="tie3">동타3<small>4인</small></button>
+          <button class="chip" data-cond="tie2">동타2<small>3인</small></button>
+          <button class="chip" data-cond="triple">트리플<small>이상</small></button>
+          <button class="chip" data-cond="ob">OB<small>&nbsp;</small></button>
+          <button class="chip" data-cond="double3">더블<small>파3</small></button>
         </div>
       </div>
       <div class="field">
@@ -745,9 +888,12 @@
     <div class="card">
       <div class="hole-nav">
         <button class="nav-btn" id="holePrev" aria-label="이전 홀">‹</button>
-        <div class="hole-title">
-          <div class="num" id="holeNum">1</div>
-          <div class="of" id="holeOf">/ 18홀</div>
+        <div class="hole-center">
+          <div class="hole-title">
+            <div class="num" id="holeNum">1</div>
+            <div class="of" id="holeOf">/ 18홀</div>
+          </div>
+          <button class="order-btn" id="orderBtn" aria-label="치는 순서 정하기"><b>⛳</b><span>순서 정하기</span></button>
         </div>
         <button class="nav-btn" id="holeNext" aria-label="다음 홀">›</button>
       </div>
@@ -765,6 +911,7 @@
       <div id="bonusSummary" class="bonus-summary" hidden></div>
 
       <div id="scoreRows" style="margin-top:8px;"></div>
+      <div class="match-note" id="matchNote" hidden></div>
       <div class="draw-actions" id="drawActions" hidden>
         <button class="ghost-btn" id="drawAllBtn">🎲 한번에 뽑기</button>
         <button class="ghost-btn" id="drawResetBtn">다시 뽑기</button>
@@ -795,7 +942,7 @@
       <div class="team-info" id="summaryInfo" hidden></div>
     </div>
 
-    <div class="card" style="margin-top:8px;">
+    <div class="card" style="margin-top:8px;" id="settleCard">
       <div class="section-label">정산 방법 (최소 송금)</div>
       <div class="settle-list" id="settleList"></div>
     </div>
@@ -836,6 +983,18 @@
   </section>
 </div>
 
+<div class="draw-overlay" id="drawOverlay" hidden aria-hidden="true">
+  <div class="draw-stage" id="drawStage">
+    <div class="roulette-wrap" id="rouletteWrap">
+      <div class="roulette" id="rouletteWheel"></div>
+      <div class="order-ring" id="orderRing" hidden></div>
+      <div class="roulette-hub" id="rouletteHub">🎲</div>
+      <div class="roulette-pin" id="roulettePin"></div>
+    </div>
+    <div class="draw-caption" id="drawCaption">팀 뽑기 중…</div>
+  </div>
+</div>
+
 <div class="modal-back" id="confirmModal" hidden>
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
     <div class="modal-title" id="confirmTitle">진행 중인 게임을 초기화할까요?</div>
@@ -872,6 +1031,10 @@
       birdie:{amt:0, mode:'pot'}, near:{amt:0, mode:'pot'}, long:{amt:0, mode:'pot'},
       eagle:{amt:0, mode:'pot'}, hio:{amt:0, mode:'pot'}
     },
+    matchMode: 'round',      // 팀전(매칭): 'round'=전홀 팀원 동일 | 'hole'=홀별 팀원 구분
+    matchTeams: [],          // 매칭(전홀 동일): ['R'|'B'|null per player]
+    matchHoleTeams: {},      // 매칭(홀별): holeNum -> ['R'|'B'|null per player]
+    teeOrder: {},            // holeNum -> [치는 순서(1..n) per player]
     draws: {},               // 팀전: holeNum -> ['R'|'B'|'J'|null per player]
     roundDate: todayStr(),
     courseName: '',
@@ -980,6 +1143,8 @@
     state.flags = {};
     state.eraser = {};
     state.draws = {};
+    state.teeOrder = {};
+    state.matchHoleTeams = {};
     state.lastResultTotals = null;
     state.lastResultStrokes = null;
     state.lastResultRel = null;
@@ -1016,7 +1181,39 @@
   $('bonusEagle').addEventListener('input', function(e){ state.bonuses.eagle = parseInt(e.target.value,10)||0; });
   $('bonusHio').addEventListener('input', function(e){ state.bonuses.hio = parseInt(e.target.value,10)||0; });
 
+  function renderUpDownRoster(){
+    var list = $('nameList');
+    list.innerHTML = '';
+    var wrap = document.createElement('div');
+    wrap.className = 'ud-roster';
+    [['R','불사조팀',[0,1]],['B','푸른용팀',[2,3]]].forEach(function(t){
+      var col = document.createElement('div');
+      col.className = 'ud-col '+t[0];
+      var head = document.createElement('div');
+      head.className = 'ud-head';
+      head.innerHTML = (ICON[t[0]]||'') + '<span>' + t[1] + '</span>';
+      col.appendChild(head);
+      t[2].forEach(function(i){
+        (function(i){
+          var row = document.createElement('div');
+          row.className = 'ud-name';
+          var dot = document.createElement('div');
+          dot.className = 'dot'; dot.style.background = PALETTE[i%PALETTE.length];
+          var input = document.createElement('input');
+          input.type='text'; input.maxLength=8;
+          input.value = state.names[i] || ('플레이어'+(i+1));
+          input.placeholder = '플레이어'+(i+1);
+          input.addEventListener('input', function(e){ state.names[i] = e.target.value; });
+          row.appendChild(dot); row.appendChild(input);
+          col.appendChild(row);
+        })(i);
+      });
+      wrap.appendChild(col);
+    });
+    list.appendChild(wrap);
+  }
   function renderNameList(){
+    if(isUpDown()){ renderUpDownRoster(); return; }
     var list = $('nameList');
     list.innerHTML = '';
     for(var i=0;i<state.playerCount;i++){
@@ -1050,10 +1247,40 @@
 
         row.appendChild(dot);
         row.appendChild(input);
+        if(isMatchMode() && state.matchMode==='round'){
+          row.appendChild(buildTeamPicker(null, i, function(){ renderNameList(); }));
+        }
         row.appendChild(handiCol);
         list.appendChild(row);
       })(i);
     }
+  }
+
+  // 빨강/파랑 팀 선택 버튼 (설정 화면 · 홀 화면 공용)
+  function buildTeamPicker(h, i, after){
+    normMatch();
+    var wrap = document.createElement('div');
+    wrap.className = 'team-pick';
+    [['R','불사조'],['B','푸른용']].forEach(function(t){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tp '+t[0];
+      b.innerHTML = (ICON[t[0]]||'') + '<span>' + t[1] + '</span>';
+      b.setAttribute('aria-pressed', String(teamOf(h,i)===t[0]));
+      b.addEventListener('click', function(){
+        setTeamOf(h, i, teamOf(h,i)===t[0] ? null : t[0]);
+        persistCurrent();
+        if(after) after();
+      });
+      wrap.appendChild(b);
+    });
+    return wrap;
+  }
+  function matchBalanceNote(h){
+    var R=0,B=0;
+    for(var i=0;i<state.playerCount;i++){ var t=teamOf(h,i); if(t==='R')R++; else if(t==='B')B++; }
+    if(R===2 && B===2) return '';
+    return '빨강 '+R+'명 · 파랑 '+B+'명 — 2:2로 맞춰 주세요.';
   }
 
   $('pcMinus').addEventListener('click', function(){
@@ -1061,6 +1288,15 @@
   });
   $('pcPlus').addEventListener('click', function(){
     if(state.playerCount<4){ state.playerCount++; renderNameList(); }
+  });
+  document.querySelectorAll('#matchModeField .chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      normMatch();
+      state.matchMode = chip.dataset.mm;
+      if(state.matchMode==='hole') state.matchTeams = [];
+      else state.matchHoleTeams = {};
+      applyModeToSetup();
+    });
   });
   $('pcVal').textContent = state.playerCount;
   var pcObserver = function(){ $('pcVal').textContent = state.playerCount; };
@@ -1138,13 +1374,16 @@
   // ---------- MODE ----------
   function updateBrandSub(screen){
     var sub = (screen==='mode') ? '골프 내기 자동 계산'
-      : (state.mode==='team' ? '팀전 · 뽑기 내기 자동 계산' : '스트로크 내기 자동 계산');
+      : (isDrawMode() ? '팀전 · 뽑기 내기 자동 계산'
+        : isUpDown() ? '업다운 내기 자동 계산'
+        : state.mode==='match' ? '팀전 · 매칭 내기 자동 계산' : '스트로크 내기 자동 계산');
     document.querySelector('.brand .sub').textContent = sub;
   }
   document.querySelectorAll('.mode-card').forEach(function(card){
     card.addEventListener('click', function(){
       state.mode = card.dataset.mode;
-      if(state.mode==='team'){
+      if(!roundInProgress() && state.mode==='team' && !state.deposit) state.deposit = 100000;
+      if(isTeamMode()){
         state.playerCount = 4;
         for(var i=0;i<4;i++){
           if(!state.names[i]) state.names[i] = (i===0?'나':'친구'+i);
@@ -1157,22 +1396,36 @@
     });
   });
   function applyModeToSetup(){
-    var team = state.mode==='team';
+    var team = isTeamMode();
+    normMatch();
+    if(isUpDown()){ state.matchMode='round'; state.matchTeams=['R','R','B','B']; }
+    $('matchModeField').hidden = !isMatchMode() || isUpDown();
+    document.querySelectorAll('#matchModeField .chip').forEach(function(c){
+      c.setAttribute('aria-pressed', String(c.dataset.mm===state.matchMode));
+    });
     $('pcStepper').hidden = team;
     $('pcFixed').hidden = !team;
     $('pcVal').textContent = state.playerCount;
     $('nameList').classList.toggle('no-handi', team);
     $('nameLabel').textContent = team ? '플레이어 이름' : '플레이어 이름 & 핸디';
-    $('nameHint').textContent = team ? '4명의 이름을 입력하세요. 팀은 매 홀 뽑기로 정해져요.'
+    $('nameHint').textContent = isDrawMode() ? '4명의 이름을 입력하세요. 팀은 매 홀 뽑기로 정해져요.'
+      : isUpDown() ? '팀별로 2명씩 이름을 입력하세요. 팀은 라운드 내내 고정돼요.'
+      : isMatchMode() ? (state.matchMode==='round' ? '4명의 이름을 입력하고, 이름 옆에서 팀을 2:2로 지정하세요.'
+                                                   : '4명의 이름을 입력하세요. 팀은 홀마다 직접 지정해요.')
       : '시작 전 접대(핸디캡)를 금액으로 미리 줄 경우 입력하세요. 없으면 0.';
     $('unitField').hidden = team;
     $('teamMoneyRow').hidden = !team;
+    $('depositField').hidden = !usesPot();
+    $('holeAmtField').style.gridColumn = usesPot() ? '' : '1 / -1';
     $('potHint').hidden = !team;
     $('teamBirdieField').hidden = !team;
     renderTeamBonusList();
+    $('bonusModeHint').textContent = !usesPot()
+      ? '선입금이 없어 축하금은 항상 별도계산 — 나머지 인원이 각자 지급합니다.'
+      : '총금액차감: 기록한 사람이 판돈에서 가져감 · 별도계산: 나머지 인원이 각자 지급.';
     $('bonusCard').hidden = team;
     $('baepanCard').hidden = team;
-    $('jokerCard').hidden = !team;
+    $('jokerCard').hidden = !isDrawMode();
     $('oecdCard').hidden = !team;
     normOecd();
     $('oecdThreshold').value = state.oecd.threshold;
@@ -1180,13 +1433,19 @@
     updateOecdChips();
     $('depositInput').value = state.deposit;
     $('holeAmtInput').value = state.holeAmount;
-    $('startBtn').textContent = team ? '팀전 시작' : '라운딩 시작';
+    $('startBtn').textContent = isUpDown() ? '업다운 시작' : team ? '팀전 시작' : '라운딩 시작';
     renderNameList();
     updatePotHint();
     updateJokerVal();
     updateBrandSub(activeScreen);
   }
   function updatePotHint(){
+    if(!usesPot()){
+      $('potHint').textContent = '선입금 없이 홀마다 정산해요. 진 팀 2명이 각자 '
+        + state.holeAmount.toLocaleString('ko-KR') + '원씩, 이긴 팀 2명에게 인당 '
+        + state.holeAmount.toLocaleString('ko-KR') + '원을 지급합니다. 동점이면 다음 홀로 이월(2배).';
+      return;
+    }
     var pot = state.deposit*4;
     var per = state.holeCount ? Math.floor(pot/state.holeCount/2) : 0;
     $('potHint').textContent = '판돈 '+pot.toLocaleString('ko-KR')+'원 · '+state.holeCount+'홀 기준 인당 약 '
@@ -1263,6 +1522,7 @@
       input.addEventListener('input', function(e){ cfg.amt = parseInt(e.target.value,10)||0; });
       var holder = document.createElement('div'); holder.appendChild(input);
       var chips = document.createElement('div'); chips.className = 'chip-row';
+      if(!usesPot()){ chips.hidden = true; }
       [['pot','총금액차감'],['separate','별도계산']].forEach(function(m){
         var c = document.createElement('button');
         c.className = 'chip small'; c.textContent = m[1];
@@ -1303,7 +1563,38 @@
   // ---------- TEAM LOGIC ----------
   var BALLS = ['R','R','B','B','J'];
   var BALL_LABEL = {R:'불사조', B:'푸른용', J:'조커'};
-  var ICON = { R:'<svg class="ic" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M21 8.5c2.4 0 4 1.6 4.3 3.4l3.2 1-3.3 1c-.6 2.6-2.6 4.6-5.3 5.2l-4.6 2.4 1.6-4.3c-.5-.8-.8-1.8-.8-2.8 0-3.4 2.3-5.9 4.9-5.9z"/><path d="M20.4 8.7C19.3 6.2 19.6 3.9 21.2 2c-.3 2.2.1 4.2 1.3 6.2zM19 9.3C17.1 7.5 16.2 5.3 16.5 3c.7 2 1.9 3.7 3.6 5z"/><path d="M17.6 14.4C13 13.6 9.2 10.3 7.6 5.5c2.6 2.7 5.6 4.2 8.9 4.5-1.4-1.1-2.3-2.6-2.6-4.3 1.6 1.7 3.5 2.8 5.7 3.1z"/><path d="M16.4 19.2C12.3 22 8.2 22.6 3 21.6c3.6 1.9 7.2 2.1 10.6 1.3-3.2 2.4-6.8 4.6-11.4 5.6 4.6.4 8.8-1 12.1-3.4-1 2.4-2.9 4.4-5.1 5.9 4.2-.6 7.3-3.4 8.6-7.3z"/><circle class="eye" cx="22.3" cy="11.6" r="1"/></svg>', B:'<svg class="ic" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M5 31C5 23 8 15 14 10.5 16 9 18.5 8.6 21 9.2L29.5 12.4C30.2 12.7 30.1 13.7 29.3 13.8L21.5 15 28 17.6C28.7 17.9 28.5 18.9 27.7 18.9L19.5 19C17 21.5 14.5 24 13.5 31Z"/><path d="M15.5 10C12.5 7.5 10 5 8 2.5 11.5 3.8 14.5 5.8 17.5 8.8Z"/><path d="M13 12C10 10.5 7 9.5 4.5 9.5 7.5 8.3 10.8 8.6 14 10.3Z"/><path d="M24 15.3C26 17 25 21 21.5 22 23.5 20.5 23.8 18 22.8 16Z"/><path d="M9 17 5.5 16.5 8.2 19.5ZM7.2 22 3.8 22.3 6.8 24.6ZM6.3 27 3 27.8 6 29.6Z"/><circle class="eye" cx="19.6" cy="11.9" r="1.1"/></svg>' , J:'<svg class="ic" viewBox="0 0 32 32" aria-hidden="true"><g fill="#fff"><path d="M16 13.5c-2.4-3.2-5.6-5-9.6-5.2 2 1.3 3.2 3.2 3.4 5.4L9 14.8C11.2 13.6 13.6 13.2 16 13.5zM16 13.5c2.4-3.2 5.6-5 9.6-5.2-2 1.3-3.2 3.2-3.4 5.4l1.4 1.1C21.4 13.6 19 13.2 16 13.5zM16 13.5c-1-3.4-.6-6.8 1.2-10-2.6 1.6-4.2 4-4.6 7.2z"/><circle cx="6" cy="8" r="1.8"/><circle cx="26" cy="8" r="1.8"/><circle cx="17.6" cy="3" r="1.8"/><path d="M9.5 15.2c4.2-1.4 8.8-1.4 13 0 .3 1 .5 2.1.5 3.3 0 4.6-3.1 8.5-7 8.5s-7-3.9-7-8.5c0-1.2.2-2.3.5-3.3z"/><path d="M8 27.5c2.3 1.4 5.1 2.2 8 2.2s5.7-.8 8-2.2l-1.8-1.6c-1.8 1.1-3.9 1.7-6.2 1.7s-4.4-.6-6.2-1.7z"/></g><g fill="#111"><path d="M12 18.6c.7-.8 1.9-.8 2.6 0-.8.3-1.8.3-2.6 0zM17.4 18.6c.7-.8 1.9-.8 2.6 0-.8.3-1.8.3-2.6 0z"/><path d="M12.4 21.8c2.2 1.9 5 1.9 7.2 0-.3 2-1.8 3.3-3.6 3.3s-3.3-1.3-3.6-3.3z"/></g></svg>' };
+  var ICON = { R:'<svg class="ic" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M22.6 7.1c.2-2.7 1.5-4.8 3.9-6.4-.4 1.2-.5 2.3-.3 3.5 1.2-1.9 2.9-3.1 5.1-3.8-1.1 1.2-1.8 2.5-2.1 4 1.4-.9 2.9-1.4 4.5-1.3-3 1.5-5.1 3.5-6.3 6.1z"/><path d="M22.9 7.6c2 0 3.6 1.6 3.6 3.6 0 .5-.1 1-.3 1.5l5.2 1.1-5.5 1.8c-.8.7-1.9 1.1-3 1.1-2 0-3.6-1.6-3.6-3.6s1.6-3.6 3.6-3.6z"/><path d="M9.3 19.3c-.6-3.5 2.4-6.6 6.9-7.4 2.8-.5 5.4.2 7.1 1.7l-.6 5.1c-1.4 2.3-4.1 4.1-7.2 4.7-3.3.6-5.9-.8-6.2-4.1z"/><path d="M17.1 12.8C14.5 6.7 9.8 2.4 3.1 0c2.9 3.4 4.4 7 4.6 10.9-2.1-2.1-4.6-3.6-7.5-4.4 3.3 3.2 5.4 6.6 6.2 10.1-1.9-1.3-3.9-2.2-6-2.5 3.5 2.6 5.9 5.6 7.1 8.8z"/><path d="M12.3 20.9c-2.6 4.1-6.8 6.9-12.3 8.5 4.8.2 8.8-1 12-3.7-1.3 2.2-3.2 4-5.7 5.4 4.5-.9 7.6-3.5 9.2-7.7z"/><path d="M14.9 22.3c-1.2 4-4 7-8.5 9 4.4-.5 7.6-2.6 9.5-6.3zM17.3 22.5c.2 3.5-1 6.5-3.6 8.9 3.4-1.1 5.4-3.6 5.9-7.4z"/><circle class="eye" cx="24" cy="10.8" r="1.1"/></svg>', B:'<svg class="ic" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M5 31C5 23 8 15 14 10.5 16 9 18.5 8.6 21 9.2L29.5 12.4C30.2 12.7 30.1 13.7 29.3 13.8L21.5 15 28 17.6C28.7 17.9 28.5 18.9 27.7 18.9L19.5 19C17 21.5 14.5 24 13.5 31Z"/><path d="M15.5 10C12.5 7.5 10 5 8 2.5 11.5 3.8 14.5 5.8 17.5 8.8Z"/><path d="M13 12C10 10.5 7 9.5 4.5 9.5 7.5 8.3 10.8 8.6 14 10.3Z"/><path d="M24 15.3C26 17 25 21 21.5 22 23.5 20.5 23.8 18 22.8 16Z"/><path d="M9 17 5.5 16.5 8.2 19.5ZM7.2 22 3.8 22.3 6.8 24.6ZM6.3 27 3 27.8 6 29.6Z"/><circle class="eye" cx="19.6" cy="11.9" r="1.1"/></svg>' , J:'<svg class="ic" viewBox="0 0 32 32" aria-hidden="true"><g fill="#fff"><path d="M16 13.5c-2.4-3.2-5.6-5-9.6-5.2 2 1.3 3.2 3.2 3.4 5.4L9 14.8C11.2 13.6 13.6 13.2 16 13.5zM16 13.5c2.4-3.2 5.6-5 9.6-5.2-2 1.3-3.2 3.2-3.4 5.4l1.4 1.1C21.4 13.6 19 13.2 16 13.5zM16 13.5c-1-3.4-.6-6.8 1.2-10-2.6 1.6-4.2 4-4.6 7.2z"/><circle cx="6" cy="8" r="1.8"/><circle cx="26" cy="8" r="1.8"/><circle cx="17.6" cy="3" r="1.8"/><path d="M9.5 15.2c4.2-1.4 8.8-1.4 13 0 .3 1 .5 2.1.5 3.3 0 4.6-3.1 8.5-7 8.5s-7-3.9-7-8.5c0-1.2.2-2.3.5-3.3z"/><path d="M8 27.5c2.3 1.4 5.1 2.2 8 2.2s5.7-.8 8-2.2l-1.8-1.6c-1.8 1.1-3.9 1.7-6.2 1.7s-4.4-.6-6.2-1.7z"/></g><g fill="#111"><path d="M12 18.6c.7-.8 1.9-.8 2.6 0-.8.3-1.8.3-2.6 0zM17.4 18.6c.7-.8 1.9-.8 2.6 0-.8.3-1.8.3-2.6 0z"/><path d="M12.4 21.8c2.2 1.9 5 1.9 7.2 0-.3 2-1.8 3.3-3.6 3.3s-3.3-1.3-3.6-3.3z"/></g></svg>' };
+  function isTeamMode(){ return state.mode==='team' || state.mode==='match' || state.mode==='updown'; }
+  function isDrawMode(){ return state.mode==='team'; }
+  function isUpDown(){ return state.mode==='updown'; }
+  // 팀을 손으로 지정하는 모드 (매칭 · 업다운)
+  function isMatchMode(){ return state.mode==='match' || state.mode==='updown'; }
+  // 선입금(판돈)을 쓰는 모드인지
+  // 선입금(판돈)을 쓰는 모드는 팀전(뽑기)뿐. 매칭·업다운은 홀마다 진 팀이 이긴 팀에게 직접 지급.
+  function usesPot(){ return state.mode==='team'; }
+  function teamDeposit(){ return usesPot() ? state.deposit : 0; }
+  function normMatch(){
+    if(state.matchMode!=='hole') state.matchMode = 'round';
+    if(!Array.isArray(state.matchTeams)) state.matchTeams = [];
+    if(!state.matchHoleTeams) state.matchHoleTeams = {};
+  }
+  function matchHoleRow(h){
+    normMatch();
+    if(!state.matchHoleTeams[h]) state.matchHoleTeams[h] = new Array(state.playerCount).fill(null);
+    return state.matchHoleTeams[h];
+  }
+  // 어떤 팀 모드든 플레이어의 팀('R'|'B'|'J'|null)을 돌려준다
+  function teamOf(h,i){
+    if(state.mode==='team') return getDraw(h)[i];
+    if(!isMatchMode()) return null;
+    normMatch();
+    return (state.matchMode==='hole') ? (matchHoleRow(h)[i]||null) : (state.matchTeams[i]||null);
+  }
+  function setTeamOf(h,i,v){
+    normMatch();
+    if(state.matchMode==='hole') matchHoleRow(h)[i] = v;
+    else state.matchTeams[i] = v;
+  }
   function getDraw(h){
     if(!state.draws[h]) state.draws[h] = new Array(state.playerCount).fill(null);
     return state.draws[h];
@@ -1324,27 +1615,28 @@
     for(var i=0;i<state.playerCount;i++) drawFor(h,i);
   }
   function teamsForHole(h){
-    var d = getDraw(h), R=[], B=[], J=null, all=true;
-    d.forEach(function(b,i){
+    var R=[], B=[], J=null, all=true;
+    for(var i=0;i<state.playerCount;i++){
+      var b = teamOf(h,i);
       if(b==='R') R.push(i); else if(b==='B') B.push(i); else if(b==='J') J=i; else all=false;
-    });
+    }
     if(J!=null){ if(R.length<B.length) R.push(J); else B.push(J); }
     return { valid: all && R.length===2 && B.length===2, R:R, B:B, joker:J };
   }
-  function effRel(h,i){ return getDraw(h)[i]==='J' ? jokerRelFor(h) : state.scores[h][i]; }
+  function effRel(h,i){ return teamOf(h,i)==='J' ? jokerRelFor(h) : state.scores[h][i]; }
   // Walks holes in order: confirmed holes plus (optionally) the hole being previewed.
   function teamLedger(previewHole){
-    var n = state.playerCount;
-    var pot = state.deposit*n, carry = 0;
-    var won = new Array(n).fill(0), birdie = new Array(n).fill(0), results = {};
+    var n = state.playerCount, UD = !usesPot();
+    var pot = UD ? 0 : state.deposit*n, carry = 0;
+    var won = new Array(n).fill(0), birdie = new Array(n).fill(0), up = new Array(n).fill(0), results = {};
     for(var h=1; h<=state.holeCount; h++){
       if(!state.confirmedHoles[h] && h!==previewHole) continue;
       var t = teamsForHole(h), par = state.pars[h]||4;
       var r = { teams:t, carryIn:carry, stake:state.holeAmount+carry, potBefore:pot, winner:null, paid:0, per:0, awards:[] };
       var awardList = teamAwardsForHole(h);
-      // 별도계산 축하금: 나머지 인원이 각자 지급
+      // 별도계산 축하금: 나머지 인원이 각자 지급 (업다운은 판돈이 없어 항상 별도계산)
       awardList.forEach(function(aw){
-        if(aw.mode!=='separate') return;
+        if(!UD && aw.mode!=='separate') return;
         var payers = 0;
         for(var j=0;j<n;j++){
           if(j===aw.i) continue;
@@ -1360,14 +1652,22 @@
           r.winner = 'tie'; carry = r.stake;
         } else {
           r.winner = r.sumR<r.sumB ? 'R' : 'B';
-          var per = Math.min(r.stake, Math.floor(pot/2));
-          r.per = per; r.paid = per*2; pot -= r.paid; carry = 0;
-          t[r.winner].forEach(function(i){ won[i]+=per; });
+          var loser = r.winner==='R' ? 'B' : 'R';
+          if(UD){
+            // 업다운: 진 팀 각자가 이긴 팀 각자에게 인당 금액을 지급
+            r.per = r.stake; r.paid = r.per*2; carry = 0;
+            t[r.winner].forEach(function(i){ won[i]+=r.per; up[i]+=1; });
+            t[loser].forEach(function(i){ won[i]-=r.per; up[i]-=1; });
+          } else {
+            var per = Math.min(r.stake, Math.floor(pot/2));
+            r.per = per; r.paid = per*2; pot -= r.paid; carry = 0;
+            t[r.winner].forEach(function(i){ won[i]+=per; });
+          }
         }
       }
-      // 총금액차감 축하금: 판돈에서 가져감
+      // 총금액차감 축하금: 판돈에서 가져감 (업다운은 해당 없음)
       awardList.forEach(function(aw){
-        if(aw.mode==='separate') return;
+        if(UD || aw.mode==='separate') return;
         var take = Math.min(aw.amt, pot);
         pot -= take; won[aw.i] += take;
         r.awards.push({i:aw.i, kind:aw.kind, mode:'pot', got:take});
@@ -1376,22 +1676,31 @@
       if(state.oecd && state.oecd.on && state.oecd.penalty>0){
         r.oecd = [];
         for(var q=0;q<n;q++){
-          var netNow = won[q] - state.deposit + birdie[q];
+          var netNow = won[q] - teamDeposit() + birdie[q];
           if(netNow < state.oecd.threshold) continue;
           var whys = oecdHits(h,q);
           if(!whys.length) continue;
           var times = state.oecd.dup ? whys.length : 1;
           var why = state.oecd.dup ? whys.join('+') : whys[0];
-          var back = Math.min(state.oecd.penalty*times, won[q]);
-          if(back<=0) continue;
-          won[q] -= back; pot += back;
+          var back = state.oecd.penalty*times;
+          if(UD){
+            // 업다운: 판돈이 없으므로 나머지 인원에게 균등 지급
+            var others = n-1; if(others<=0) continue;
+            var share = Math.floor(back/others), sr = back - share*others, c = 0;
+            birdie[q] -= back;
+            for(var z=0;z<n;z++){ if(z===q) continue; birdie[z] += share + (c<sr?1:0); c++; }
+          } else {
+            back = Math.min(back, won[q]);
+            if(back<=0) continue;
+            won[q] -= back; pot += back;
+          }
           r.oecd.push({i:q, amt:back, why:why});
         }
       }
-      r.potAfter = pot; r.carryOut = carry;
+      r.potAfter = pot; r.carryOut = carry; r.up = up.slice();
       results[h] = r;
     }
-    return { pot:pot, carry:carry, won:won, birdie:birdie, results:results };
+    return { pot:pot, carry:carry, won:won, birdie:birdie, up:up, results:results };
   }
   function teamAwardsForHole(h){
     normTeamBonus();
@@ -1407,23 +1716,24 @@
     return list;
   }
   function teamFinal(){
-    var n = state.playerCount, L = teamLedger(null);
-    var share = Math.floor(L.pot/n), rem = L.pot - share*n;
-    var refund = [], totals = [];
+    // 각자 금액 = 회수액 − 선입금 (남은 판돈은 환급하지 않고 금액만 안내)
+    // 업다운은 선입금이 없어 회수액(±) + 축하금/OECD 가 그대로 손익
+    var n = state.playerCount, L = teamLedger(null), dep = teamDeposit();
+    var totals = [];
     for(var i=0;i<n;i++){
-      refund[i] = share + (i<rem?1:0);
-      totals[i] = L.won[i] + refund[i] - state.deposit + L.birdie[i];
+      totals[i] = L.won[i] - dep + L.birdie[i];
     }
-    return { totals:totals, won:L.won, birdie:L.birdie, refund:refund, left:L.pot };
+    return { totals:totals, won:L.won, birdie:L.birdie, up:L.up, left:L.pot };
   }
+  function fmtUp(v){ return v>0 ? (v+'UP') : v<0 ? (Math.abs(v)+'DN') : 'EVEN'; }
   function teamNames(idxs, h){
     return idxs.map(function(i){
-      return (state.names[i]||('P'+(i+1))) + (getDraw(h)[i]==='J' ? '★' : '');
+      return (state.names[i]||('P'+(i+1))) + (teamOf(h,i)==='J' ? '★' : '');
     }).join(' · ');
   }
 
   var HOLE_MAPS = ['scores','confirmedHoles','manualOB','nextHoleDoubleFlag','pars',
-                   'nearWinner','longWinner','flags','eraser','draws'];
+                   'nearWinner','longWinner','flags','eraser','draws','teeOrder','matchHoleTeams'];
   function trimHoleMaps(){
     HOLE_MAPS.forEach(function(key){
       var m = state[key]; if(!m) return;
@@ -1437,7 +1747,7 @@
     return arr;
   }
   $('startBtn').addEventListener('click', function(){
-    if(state.mode==='team'){ state.playerCount = 4; }
+    if(isTeamMode()){ state.playerCount = 4; }
     state.lastResultTotals = null;
     state.lastResultStrokes = null;
     state.lastResultRel = null;
@@ -1450,6 +1760,7 @@
         if(state.pars[h]==null) state.pars[h] = 4;
         if(state.draws[h]) fitRow(state.draws[h], null);
         if(state.eraser[h]) fitRow(state.eraser[h], false);
+        if(state.teeOrder[h] && state.teeOrder[h].length!==state.playerCount) delete state.teeOrder[h];
         if(state.flags[h]) fitRow(state.flags[h], {});
         if(state.nearWinner[h]!=null && state.nearWinner[h]>=state.playerCount) state.nearWinner[h]=null;
         if(state.longWinner[h]!=null && state.longWinner[h]>=state.playerCount) state.longWinner[h]=null;
@@ -1593,7 +1904,7 @@
   function totalsUpTo(hole){
     var n = state.playerCount;
     var totals = new Array(n).fill(0);
-    var team = state.mode==='team';
+    var team = isTeamMode();
     for(var k=0;k<n;k++){ totals[k] = team ? 0 : (state.handicaps[k]||0); }
     var strokesAbs = new Array(n).fill(0);
     var relSum = new Array(n).fill(0);
@@ -1683,7 +1994,7 @@
     });
 
     var obChip = $('obToggleChip');
-    var team = state.mode==='team';
+    var team = isTeamMode();
     obChip.hidden = team || !state.baepan.ob;
     obChip.setAttribute('aria-pressed', String(!!state.manualOB[h]));
     obChip.onclick = function(){
@@ -1697,6 +2008,7 @@
       (function(i){
         var row = document.createElement('div');
         row.className = 'score-row';
+        row.setAttribute('data-pi', String(i));
 
         var namePart = document.createElement('div');
         namePart.className = 'name-part';
@@ -1708,27 +2020,37 @@
         var nameEl = decorateName(name, ach);
         var badges = achBadges(ach);
         namePart.appendChild(dot);
+        var teeNo = (state.teeOrder[h]||[])[i];
         if(team){
           var stack = document.createElement('div');
           stack.className = 'name-stack';
+          if(teeNo){ var tb=document.createElement('span'); tb.className='tee-order'; tb.textContent=teeNo; stack.appendChild(tb); }
           stack.appendChild(nameEl);
           if(badges) stack.appendChild(badges);
-          var ball = getDraw(h)[i];
-          if(ball){
+          var ball = teamOf(h,i);
+          if(isMatchMode() && (state.matchMode==='hole' || !teamsForHole(h).valid)){
+            stack.appendChild(buildTeamPicker(h, i, function(){ renderPlay(); }));
+          } else if(ball){
             var tag = document.createElement('span');
             tag.className = 'ball '+ball;
             tag.innerHTML = (ICON[ball]||'') + BALL_LABEL[ball] + (ball==='J' ? ' · '+jokerLabel() : '');
             stack.appendChild(tag);
-          } else {
+          } else if(isDrawMode()){
             var db = document.createElement('button');
             db.className = 'draw-btn'; db.textContent = '🎲 뽑기';
             db.addEventListener('click', function(){ drawFor(h,i); renderPlay(); });
             stack.appendChild(db);
+          } else {
+            var ph = document.createElement('span');
+            ph.className = 'ball'; ph.style.cssText='background:var(--surface-2);color:var(--muted);';
+            ph.textContent = '팀 미정';
+            stack.appendChild(ph);
           }
           namePart.appendChild(stack);
         } else {
           var sstack = document.createElement('div');
           sstack.className = 'name-stack';
+          if(teeNo){ var tb2=document.createElement('span'); tb2.className='tee-order'; tb2.textContent=teeNo; sstack.appendChild(tb2); }
           sstack.appendChild(nameEl);
           if(badges) sstack.appendChild(badges);
           namePart.appendChild(sstack);
@@ -1804,7 +2126,12 @@
       })(i);
     }
 
-    $('drawActions').hidden = !team;
+    $('drawActions').hidden = !isDrawMode();
+    var mnote = $('matchNote');
+    if(isMatchMode()){
+      var msg = matchBalanceNote(h);
+      mnote.textContent = msg; mnote.hidden = !msg;
+    } else { mnote.hidden = true; }
     if(team){
       $('baepanBadge').hidden = true;
       $('condRow').innerHTML = '';
@@ -1818,7 +2145,7 @@
 
     var ready = !team || teamsForHole(h).valid;
     $('nextHoleBtn').disabled = !ready;
-    $('nextHoleBtn').textContent = !ready ? '뽑기 완료 후 확정'
+    $('nextHoleBtn').textContent = !ready ? (isMatchMode() ? '팀 지정 후 확정' : '뽑기 완료 후 확정')
       : ((h>=state.holeCount) ? '이 홀 확정 · 마지막 홀' : '이 홀 확정 →');
   }
 
@@ -1863,34 +2190,86 @@
     el.hidden = parts.length===0;
   }
 
+  // 업다운: 두 팀의 누적 UP/DOWN 배너
+  function buildUpDownBanner(r){
+    var up = (r && r.up) ? r.up : (teamLedger(null).up || []);
+    var vR = 0, vB = 0;
+    for(var i=0;i<state.playerCount;i++){
+      var t = teamOf(state.currentHole, i);
+      if(t==='R') vR = up[i]||0; else if(t==='B') vB = up[i]||0;
+    }
+    var frag = document.createDocumentFragment();
+    var ban = document.createElement('div'); ban.className='ud-banner';
+    [['R','불사조',vR],['B','푸른용',vB]].forEach(function(x, k){
+      if(k===1){
+        var vs = document.createElement('div'); vs.className='ud-vs'; vs.textContent='VS';
+        ban.appendChild(vs);
+      }
+      var side = document.createElement('div');
+      var v = x[2];
+      side.className = 'ud-side '+x[0] + (v>0 ? ' lead' : v===0 ? ' even' : '');
+      var nm = document.createElement('div'); nm.className='nm';
+      nm.innerHTML = (ICON[x[0]]||'') + '<span>'+x[1]+'</span>';
+      var val = document.createElement('div'); val.className='val';
+      val.textContent = v>0 ? (v+' UP') : v<0 ? (Math.abs(v)+' DN') : '—';
+      var sub = document.createElement('div'); sub.className='sub';
+      sub.textContent = v>0 ? '리드' : v<0 ? '추격' : '동률';
+      side.appendChild(nm); side.appendChild(val); side.appendChild(sub);
+      ban.appendChild(side);
+    });
+    frag.appendChild(ban);
+    if(vR===0 && vB===0){
+      var sq = document.createElement('div'); sq.className='ud-allsq';
+      sq.textContent = 'ALL SQUARE';
+      frag.appendChild(sq);
+    }
+    return frag;
+  }
   function refreshTeamHoleBox(h){
     var box = $('holeMoney');
     box.innerHTML = '';
     var r = teamLedger(h).results[h];
+    if(isUpDown()) box.appendChild(buildUpDownBanner(r));
     var title = document.createElement('div');
     title.style.fontWeight='700'; title.style.color='var(--ink)';
     title.textContent = '팀별 합산';
     box.appendChild(title);
     if(!r || !r.teams.valid){
       var note = document.createElement('div');
-      note.textContent = '4명 모두 뽑기를 하면 팀 합산이 표시돼요.';
+      note.textContent = isMatchMode() ? '4명 모두 팀을 지정하면 팀 합산이 표시돼요.' : '4명 모두 뽑기를 하면 팀 합산이 표시돼요.';
       box.appendChild(note);
       return;
     }
-    var tb = document.createElement('div'); tb.className='team-box';
-    [['R','빨강 불사조',r.sumR],['B','파랑 푸른용',r.sumB]].forEach(function(x){
-      var line = document.createElement('div');
-      line.className = 'team-line '+x[0]+(r.winner===x[0]?' win':'');
-      var tn = document.createElement('span'); tn.className='tn'; tn.innerHTML = ICON[x[0]] + x[1];
-      var mem = document.createElement('span'); mem.className='mem'; mem.textContent = teamNames(r.teams[x[0]], h);
-      var sum = document.createElement('span'); sum.className='sum'; sum.textContent = fmtRel(x[2]);
-      line.appendChild(tn); line.appendChild(mem); line.appendChild(sum);
-      tb.appendChild(line);
+    // 좌우로 나눈 홀 결과 배너
+    var tb = document.createElement('div'); tb.className='ud-banner hole';
+    [['R','불사조',r.sumR],['B','푸른용',r.sumB]].forEach(function(x, k){
+      if(k===1){
+        var vs = document.createElement('div'); vs.className='ud-vs'; vs.textContent='VS';
+        tb.appendChild(vs);
+      }
+      var side = document.createElement('div');
+      var winHere = (r.winner===x[0]);
+      side.className = 'ud-side '+x[0] + (winHere ? ' lead' : r.winner==='tie' ? ' even' : '');
+      var nm = document.createElement('div'); nm.className='nm';
+      nm.innerHTML = (ICON[x[0]]||'') + '<span>'+x[1]+'</span>';
+      var val = document.createElement('div'); val.className='val';
+      val.textContent = fmtRel(x[2]);
+      var mem = document.createElement('div'); mem.className='mem';
+      mem.textContent = teamNames(r.teams[x[0]], h);
+      side.appendChild(nm); side.appendChild(val); side.appendChild(mem);
+      if(winHere){
+        var crown = document.createElement('div'); crown.className='crown'; crown.textContent='WIN';
+        side.appendChild(crown);
+      }
+      tb.appendChild(side);
     });
     box.appendChild(tb);
     var res = document.createElement('div'); res.className='team-result';
     if(r.winner==='tie'){
       res.innerHTML = '동점 · 다음 홀로 인당 <span class="amt">'+r.stake.toLocaleString('ko-KR')+'원</span> 이월';
+    } else if(!usesPot()){
+      res.innerHTML = (r.winner==='R'?'불사조팀':'푸른용팀')+' 승 '+(isUpDown()?'<span class="up-tag win">1UP</span> ':'')+'· 진 팀이 인당 <span class="amt">'
+        + r.per.toLocaleString('ko-KR')+'원</span> 지급' + (r.carryIn>0?' · 이월 포함':'');
     } else if(r.paid<=0){
       res.textContent = (r.winner==='R'?'불사조팀':'푸른용팀')+' 승 · 판돈이 모두 소진됐어요';
     } else {
@@ -1902,7 +2281,7 @@
       var od = document.createElement('div'); od.className='team-result';
       od.innerHTML = '⚖️ OECD · ' + r.oecd.map(function(o){
         return escapeHtml(state.names[o.i]||('P'+(o.i+1)))+' '+o.why
-          +' <span class="amt" style="color:var(--lose)">−'+o.amt.toLocaleString('ko-KR')+'원</span> 반납';
+          +' <span class="amt" style="color:var(--lose)">−'+o.amt.toLocaleString('ko-KR')+'원</span> '+(usesPot()?'반납':'지급');
       }).join(' · ');
       box.appendChild(od);
     }
@@ -1918,7 +2297,7 @@
 
   function refreshHoleMoney(){
     var h = state.currentHole;
-    if(state.mode==='team'){ refreshTeamHoleBox(h); return; }
+    if(isTeamMode()){ refreshTeamHoleBox(h); return; }
     var net = combinedHoleDeltas(h);
     var transfers = computeSettlement(net);
     var byPayer = {};
@@ -1960,6 +2339,7 @@
   }
 
   function refreshTeamBoard(){
+    if(!usesPot()){ refreshUpDownBoard(); return; }
     $('liveLabel').textContent = '총 내기 회수금액';
     var L = teamLedger(null);
     var res = totalsUpTo(state.holeCount);
@@ -1987,8 +2367,36 @@
     el.appendChild(pr);
   }
 
+  function refreshUpDownBoard(){
+    $('liveLabel').textContent = isUpDown() ? '업다운 현황' : '현재 정산';
+    var L = teamLedger(null), n = state.playerCount;
+    var tot = [];
+    for(var i=0;i<n;i++) tot[i] = L.won[i] + L.birdie[i];
+    var el = $('liveScoreboard');
+    el.innerHTML = '';
+    var order = tot.map(function(t,idx){return idx;}).sort(function(a,b){return tot[b]-tot[a];});
+    order.forEach(function(idx, rank){
+      var row = document.createElement('div'); row.className='sb-row';
+      var rankEl = document.createElement('div'); rankEl.className='rank'; rankEl.textContent=(rank+1);
+      var dot = document.createElement('div'); dot.style.cssText='width:9px;height:9px;border-radius:50%;flex:none;background:'+PALETTE[idx%PALETTE.length];
+      var name = document.createElement('div'); name.className='pname'; name.textContent = state.names[idx]||('플레이어'+(idx+1));
+      var v = (L.up&&L.up[idx])||0;
+      var st = document.createElement('div'); st.className='strokes';
+      st.innerHTML = '<span class="up-tag '+(v>0?'win':v<0?'lose':'')+'">'+fmtUp(v)+'</span>';
+      var money = document.createElement('div'); money.className='money '+moneyClass(tot[idx]);
+      money.textContent = fmt(tot[idx]);
+      row.appendChild(rankEl); row.appendChild(dot); row.appendChild(name); row.appendChild(st); row.appendChild(money);
+      el.appendChild(row);
+    });
+    if(L.carry>0){
+      var pr = document.createElement('div'); pr.className='pot-row';
+      pr.innerHTML = '<span>다음 홀 이월 <b>인당 '+(state.holeAmount+L.carry).toLocaleString('ko-KR')+'원</b></span>';
+      el.appendChild(pr);
+    }
+  }
+
   function refreshLiveScoreboard(){
-    if(state.mode==='team'){ refreshTeamBoard(); return; }
+    if(isTeamMode()){ refreshTeamBoard(); return; }
     $('liveLabel').textContent = '현재 정산';
     var res = totalsUpTo(state.currentHole);
     renderScoreboard('liveScoreboard', res.totals, res.relSum, 'rel');
@@ -2018,14 +2426,216 @@
   $('holeNext').addEventListener('click', function(){
     if(state.currentHole<state.holeCount){ state.currentHole++; renderPlay(); }
   });
-  $('drawAllBtn').addEventListener('click', function(){ drawAll(state.currentHole); renderPlay(); });
+  var ORB_COLOR = { R:'#C0392B', B:'#2E6DA4', J:'#15171A' };
+  var ORB_MARK  = { R:'🔥', B:'🐉', J:'★' };
+  var drawAnimRunning = false;
+  function prefersReduced(){
+    try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; }
+  }
+  function rollBalls(n){
+    var pool = BALLS.slice(), out = [];
+    for(var i=0;i<n;i++){ out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]); }
+    return out;
+  }
+  function orbTargetFor(i){
+    var row = document.querySelector('.score-row[data-pi="'+i+'"]');
+    if(!row) return null;
+    var el = row.querySelector('.draw-btn') || row.querySelector('.ball') || row.querySelector('.name-stack') || row;
+    var r = el.getBoundingClientRect();
+    if(!r.width && !r.height) return null;
+    return { x:r.left + r.width/2, y:r.top + r.height/2 };
+  }
+  // 공이 도착하면 해당 행의 '뽑기' 버튼을 결과 태그로 바꿔 끼운다 (전체 렌더 없이)
+  function placeBallTag(i, ball, h){
+    if(h!=null && state.currentHole!==h) return;
+    var row = document.querySelector('.score-row[data-pi="'+i+'"]');
+    if(!row) return;
+    var stack = row.querySelector('.name-stack');
+    var btn = row.querySelector('.draw-btn');
+    if(!stack) return;
+    var tag = document.createElement('span');
+    tag.className = 'ball pop ' + ball;
+    tag.innerHTML = (ICON[ball]||'') + BALL_LABEL[ball] + (ball==='J' ? ' · '+jokerLabel() : '');
+    if(btn) stack.replaceChild(tag, btn); else stack.appendChild(tag);
+  }
+  function flyOrb(from, to, ball, done, opt){
+    opt = opt || {};
+    var orb = document.createElement('div');
+    orb.className = 'draw-orb' + (opt.cls ? ' '+opt.cls : '');
+    orb.textContent = opt.text != null ? opt.text : (ORB_MARK[ball] || '');
+    if(opt.ink) orb.style.color = opt.ink;
+    var c = opt.color || ORB_COLOR[ball] || '#fff';
+    orb.style.left = from.x + 'px';
+    orb.style.top = from.y + 'px';
+    orb.style.background = c;
+    orb.style.boxShadow = '0 0 16px 6px ' + c + ', 0 0 34px 12px ' + c + '66';
+    orb.style.transform = 'translate(0,0) scale(.35)';
+    document.body.appendChild(orb);
+    // reflow 후 목표 지점으로
+    void orb.offsetWidth;
+    orb.style.transform = 'translate(' + (to.x-from.x) + 'px,' + (to.y-from.y) + 'px) scale(1)';
+    setTimeout(function(){
+      orb.classList.add('land');
+      if(done) done();
+      setTimeout(function(){ if(orb.parentNode) orb.parentNode.removeChild(orb); }, 360);
+    }, 780);
+  }
+  function runDrawAnimation(h, result, finish){
+    var ov = $('drawOverlay'), wheel = $('rouletteWheel'), cap = $('drawCaption');
+    ov.hidden = false;
+    ov.classList.remove('fading');
+    cap.textContent = '팀 뽑기 중…';
+    wheel.classList.remove('spin');
+    void wheel.offsetWidth;
+    wheel.classList.add('spin');
+    var spinMs = prefersReduced() ? 250 : 2600;
+    setTimeout(function(){
+      cap.textContent = '팀 결정!';
+      var hub = document.querySelector('.roulette-hub');
+      var hr = hub ? hub.getBoundingClientRect() : null;
+      var from = hr ? { x:hr.left+hr.width/2, y:hr.top+hr.height/2 }
+                    : { x:window.innerWidth/2, y:window.innerHeight/2 };
+      setTimeout(function(){ ov.classList.add('fading'); }, 180);
+      var n = result.length, landed = 0;
+      for(var i=0;i<n;i++){
+        (function(i){
+          setTimeout(function(){
+            var to = orbTargetFor(i);
+            if(!to){ placeBallTag(i, result[i], h); if(++landed===n) setTimeout(finish, 320); return; }
+            flyOrb(from, to, result[i], function(){
+              placeBallTag(i, result[i], h);
+              if(++landed===n) setTimeout(finish, 420);
+            });
+          }, 160 + i*170);
+        })(i);
+      }
+    }, spinMs);
+  }
+  // ---------- 치는 순서 정하기 ----------
+  function shuffledOrder(n){
+    var a = []; for(var i=1;i<=n;i++) a.push(i);
+    for(var k=a.length-1;k>0;k--){ var j=Math.floor(Math.random()*(k+1)); var t=a[k]; a[k]=a[j]; a[j]=t; }
+    return a;   // a[playerIndex] = 치는 순서
+  }
+  function teeTargetFor(i){
+    var row = document.querySelector('.score-row[data-pi="'+i+'"]');
+    if(!row) return null;
+    var el = row.querySelector('.tee-order') || row.querySelector('.pname') || row.querySelector('.name-stack') || row;
+    var r = el.getBoundingClientRect();
+    if(!r.width && !r.height) return null;
+    return { x:r.left + Math.min(16, r.width/2), y:r.top + r.height/2 };
+  }
+  function placeTeeBadge(i, no, h){
+    if(h!=null && state.currentHole!==h) return;
+    var row = document.querySelector('.score-row[data-pi="'+i+'"]');
+    if(!row) return;
+    var stack = row.querySelector('.name-stack');
+    if(!stack) return;
+    var old = stack.querySelector('.tee-order');
+    var b = document.createElement('span');
+    b.className = 'tee-order pop'; b.textContent = no;
+    if(old) stack.replaceChild(b, old); else stack.insertBefore(b, stack.firstChild);
+  }
+  function buildOrderRing(n){
+    var ring = $('orderRing');
+    ring.innerHTML = '';
+    var R = 70;
+    for(var k=0;k<n;k++){
+      var ang = (k/n)*Math.PI*2 - Math.PI/2;
+      var el = document.createElement('div');
+      el.className = 'order-num';
+      el.setAttribute('data-no', String(k+1));
+      el.textContent = String(k+1);
+      el.style.transform = 'translate(' + (Math.cos(ang)*R).toFixed(1) + 'px,' + (Math.sin(ang)*R).toFixed(1) + 'px)';
+      ring.appendChild(el);
+    }
+  }
+  function runOrderAnimation(h, order, finish){
+    var n = order.length;
+    var ov = $('drawOverlay'), ring = $('orderRing'), cap = $('drawCaption');
+    $('rouletteWheel').hidden = true; $('roulettePin').hidden = true;
+    $('rouletteHub').textContent = '⛳';
+    ring.hidden = false;
+    buildOrderRing(n);
+    ov.hidden = false; ov.classList.remove('fading');
+    cap.textContent = '치는 순서 정하는 중…';
+    ring.classList.remove('spin'); void ring.offsetWidth; ring.classList.add('spin');
+    var spinMs = prefersReduced() ? 250 : 2600;
+    setTimeout(function(){
+      cap.textContent = '순서 결정!';
+      // 각 숫자칩의 현재 화면 좌표를 먼저 확보
+      var froms = {};
+      [].forEach.call(ring.children, function(el){
+        var r = el.getBoundingClientRect();
+        froms[el.getAttribute('data-no')] = { x:r.left+r.width/2, y:r.top+r.height/2 };
+      });
+      setTimeout(function(){ ov.classList.add('fading'); }, 180);
+      var landed = 0;
+      for(var i=0;i<n;i++){
+        (function(i){
+          setTimeout(function(){
+            var no = order[i];
+            var to = teeTargetFor(i), from = froms[String(no)];
+            if(!to || !from){ placeTeeBadge(i, no, h); if(++landed===n) setTimeout(finish, 320); return; }
+            flyOrb(from, to, null, function(){
+              placeTeeBadge(i, no, h);
+              if(++landed===n) setTimeout(finish, 420);
+            }, { cls:'num', color:'#F2D58C', ink:'#17241C', text:String(no) });
+          }, 160 + i*170);
+        })(i);
+      }
+    }, spinMs);
+  }
+  $('orderBtn').addEventListener('click', function(){
+    if(drawAnimRunning) return;
+    var h = state.currentHole;
+    var order = shuffledOrder(state.playerCount);
+    if(prefersReduced()){
+      state.teeOrder[h] = order; persistCurrent(); renderPlay(); return;
+    }
+    drawAnimRunning = true;
+    delete state.teeOrder[h];
+    renderPlay();
+    runOrderAnimation(h, order, function(){
+      $('drawOverlay').hidden = true;
+      $('drawOverlay').classList.remove('fading');
+      $('orderRing').hidden = true;
+      $('rouletteWheel').hidden = false; $('roulettePin').hidden = false;
+      $('rouletteHub').textContent = '🎲';
+      state.teeOrder[h] = order;
+      persistCurrent();
+      renderPlay();
+      drawAnimRunning = false;
+    });
+  });
+
+  $('drawAllBtn').addEventListener('click', function(){
+    if(drawAnimRunning) return;
+    var h = state.currentHole;
+    var result = rollBalls(state.playerCount);
+    if(prefersReduced()){
+      state.draws[h] = result; persistCurrent(); renderPlay(); return;
+    }
+    drawAnimRunning = true;
+    // 뽑기 전 상태로 행을 그려 둔다 (버튼이 보이도록)
+    state.draws[h] = new Array(state.playerCount).fill(null);
+    renderPlay();
+    runDrawAnimation(h, result, function(){
+      $('drawOverlay').hidden = true;
+      $('drawOverlay').classList.remove('fading');
+      state.draws[h] = result;
+      persistCurrent();
+      renderPlay();
+      drawAnimRunning = false;
+    });
+  });
   $('drawResetBtn').addEventListener('click', function(){
     state.draws[state.currentHole] = new Array(state.playerCount).fill(null);
     renderPlay();
   });
 
   function confirmHole(h){
-    if(state.mode==='team'){ state.confirmedHoles[h] = true; return; }
+    if(isTeamMode()){ state.confirmedHoles[h] = true; return; }
     if(state.baepan.timing==='next' && conditionsTriggered(h) && (h+1)<=state.holeCount){
       state.nextHoleDoubleFlag[h+1] = true;
     }
@@ -2043,14 +2653,14 @@
     }
   });
   $('endRoundBtn').addEventListener('click', function(){
-    if(state.mode!=='team' || teamsForHole(state.currentHole).valid){ confirmHole(state.currentHole); }
+    if(!isTeamMode() || teamsForHole(state.currentHole).valid){ confirmHole(state.currentHole); }
     finishRound();
   });
 
   // ---------- SUMMARY ----------
   function finishRound(){
     var res = totalsUpTo(state.holeCount);
-    if(state.mode==='team'){ res.totals = teamFinal().totals; }
+    if(isTeamMode()){ res.totals = teamFinal().totals; }
     state.lastResultTotals = res.totals;
     state.lastResultStrokes = res.strokesAbs;
     state.lastResultRel = res.relSum;
@@ -2068,19 +2678,26 @@
     renderHoleLog();
     $('sharePanel').hidden = true;
     var info = $('summaryInfo');
-    if(state.mode==='team'){
+    if(isTeamMode()){
       var tf = teamFinal();
-      var parts = ['판돈 '+(state.deposit*state.playerCount).toLocaleString('ko-KR')+'원 (1인 '+state.deposit.toLocaleString('ko-KR')+'원)',
-                   '홀당 인당 '+state.holeAmount.toLocaleString('ko-KR')+'원'];
+      var parts = !usesPot()
+        ? [(isUpDown()?'업다운':'팀전(매칭)')+' · 홀당 인당 '+state.holeAmount.toLocaleString('ko-KR')+'원']
+        : ['판돈 '+(state.deposit*state.playerCount).toLocaleString('ko-KR')+'원 (1인 '+state.deposit.toLocaleString('ko-KR')+'원)',
+           '홀당 인당 '+state.holeAmount.toLocaleString('ko-KR')+'원'];
       normTeamBonus();
       TEAM_BONUS_KEYS.forEach(function(k){
         var c = state.teamBonus[k[0]];
         if(c.amt>0) parts.push(TIER_LABEL[k[0]]+' '+c.amt.toLocaleString('ko-KR')+'원('+(c.mode==='separate'?'별도':'차감')+')');
       });
-      var line2 = tf.left>0 ? '<br>남은 판돈 '+tf.left.toLocaleString('ko-KR')+'원은 4명에게 균등 환급' : '';
-      var wonLine = '<br>회수: ' + state.names.slice(0,state.playerCount).map(function(nm,i){
+      var line2 = (usesPot() && tf.left>0) ? '<br>남은 판돈 <b>'+tf.left.toLocaleString('ko-KR')+'원</b>' : '';
+      if(!usesPot()){
+        line2 = '<br>' + (isUpDown()?'업다운':'홀 승패') + ': ' + state.names.slice(0,state.playerCount).map(function(nm,i){
+          return escapeHtml(nm||('P'+(i+1)))+' '+fmtUp((tf.up&&tf.up[i])||0);
+        }).join(' · ');
+      }
+      var wonLine = !usesPot() ? '' : ('<br>회수: ' + state.names.slice(0,state.playerCount).map(function(nm,i){
         return escapeHtml(nm||('P'+(i+1)))+' '+tf.won[i].toLocaleString('ko-KR')+'원';
-      }).join(' · ');
+      }).join(' · '));
       var bLine = '';
       if(tf.birdie.some(function(v){return v!==0;})){
         bLine = '<br>별도 축하금: ' + state.names.slice(0,state.playerCount).map(function(nm,i){
@@ -2152,6 +2769,9 @@
   }
 
   function renderSettlement(totals){
+    // 팀전은 판돈에서 회수하는 방식이라 개인 간 송금이 필요 없다
+    $('settleCard').hidden = (isTeamMode());
+    if(isTeamMode()) return;
     var transfers = computeSettlement(totals);
     var list = $('settleList');
     list.innerHTML = '';
@@ -2177,7 +2797,7 @@
   function renderHoleLog(){
     var el = $('holeLog');
     el.innerHTML = '';
-    teamLedgerCache = state.mode==='team' ? teamLedger(null) : null;
+    teamLedgerCache = isTeamMode() ? teamLedger(null) : null;
     for(var h=1; h<=state.holeCount; h++){
       if(!state.confirmedHoles[h]) continue;
       var par = state.pars[h]||4;
@@ -2185,16 +2805,18 @@
       row.className='hole-log-row';
       var hn = document.createElement('div'); hn.className='hn'; hn.textContent = h+'H·파'+par;
       var scores = document.createElement('div'); scores.className='scores';
-      if(state.mode==='team'){
+      if(isTeamMode()){
         var tr = teamLedgerCache ? teamLedgerCache.results[h] : null;
         if(tr && tr.teams.valid){
           scores.textContent = '빨 '+teamNames(tr.teams.R,h)+' '+fmtRel(tr.sumR)+' : '+fmtRel(tr.sumB)+' 파 '+teamNames(tr.teams.B,h);
           var pill = document.createElement('div');
           pill.className = 'tag-pill '+(tr.winner==='tie'?'T':tr.winner);
-          pill.textContent = tr.winner==='tie' ? '이월' : ('인당 +'+tr.per.toLocaleString('ko-KR'));
+          pill.textContent = tr.winner==='tie' ? '이월'
+            : !usesPot() ? ('인당 '+tr.per.toLocaleString('ko-KR')+'원')
+            : ('인당 +'+tr.per.toLocaleString('ko-KR'));
           row.appendChild(hn); row.appendChild(scores); row.appendChild(pill);
         } else {
-          scores.textContent = '뽑기 없음';
+          scores.textContent = isMatchMode() ? '팀 미지정' : '뽑기 없음';
           row.appendChild(hn); row.appendChild(scores);
         }
         el.appendChild(row);
@@ -2226,8 +2848,9 @@
     if(state.courseName) headBits.push(state.courseName);
     if(state.roundDate) headBits.push(fmtDate(state.roundDate));
     if(headBits.length) lines.push(headBits.join(' · '));
-    if(state.mode==='team'){
-      lines.push('팀전 · '+state.holeCount+'홀 · 선입금 '+state.deposit.toLocaleString('ko-KR')+'원 · 홀당 인당 '+state.holeAmount.toLocaleString('ko-KR')+'원'
+    if(isTeamMode()){
+      if(!usesPot()){ lines.push((isUpDown()?'업다운':'팀전(매칭)')+' · '+state.holeCount+'홀 · 홀당 인당 '+state.holeAmount.toLocaleString('ko-KR')+'원'); } else
+      lines.push('팀전('+(isDrawMode()?'뽑기':'매칭')+') · '+state.holeCount+'홀 · 선입금 '+state.deposit.toLocaleString('ko-KR')+'원 · 홀당 인당 '+state.holeAmount.toLocaleString('ko-KR')+'원'
         );
       normTeamBonus();
       var bparts = [];
@@ -2238,8 +2861,12 @@
       if(bparts.length) lines.push('축하금: '+bparts.join(', '));
       if(state.oecd && state.oecd.on) lines.push('OECD: '+state.oecd.threshold.toLocaleString('ko-KR')+'원 이상 시 '+state.oecd.penalty.toLocaleString('ko-KR')+'원 반납'+(state.oecd.dup?' (중복 적용)':''));
       var tfs = teamFinal();
-      lines.push('회수: '+state.names.slice(0,state.playerCount).map(function(nm,i){ return nm+' '+tfs.won[i].toLocaleString('ko-KR')+'원'; }).join(', '));
-      if(tfs.left>0) lines.push('남은 판돈 '+tfs.left.toLocaleString('ko-KR')+'원 균등 환급');
+      if(!usesPot()){
+        lines.push((isUpDown()?'업다운':'홀 승패')+': '+state.names.slice(0,state.playerCount).map(function(nm,i){ return nm+' '+fmtUp((tfs.up&&tfs.up[i])||0); }).join(', '));
+      } else {
+        lines.push('회수: '+state.names.slice(0,state.playerCount).map(function(nm,i){ return nm+' '+tfs.won[i].toLocaleString('ko-KR')+'원'; }).join(', '));
+        if(tfs.left>0) lines.push('남은 판돈 '+tfs.left.toLocaleString('ko-KR')+'원');
+      }
     } else {
       lines.push(state.holeCount+'홀 · '+state.unit.toLocaleString('ko-KR')+'원/타');
     }
@@ -2251,15 +2878,17 @@
       var name = state.names[idx]||('플레이어'+(idx+1));
       lines.push((rank+1)+'위 '+name+' ('+fmtRel(relS[idx])+') '+(strokes[idx]||0)+'타  '+fmt(totals[idx]));
     });
-    lines.push('');
-    lines.push('[정산 방법]');
-    var transfers = computeSettlement(totals);
-    if(transfers.length===0){
-      lines.push('정산할 금액 없음');
-    } else {
-      transfers.forEach(function(t){
-        lines.push((state.names[t.from]||'')+' → '+(state.names[t.to]||'')+'  '+t.amt.toLocaleString('ko-KR')+'원');
-      });
+    if(!isTeamMode()){
+      lines.push('');
+      lines.push('[정산 방법]');
+      var transfers = computeSettlement(totals);
+      if(transfers.length===0){
+        lines.push('정산할 금액 없음');
+      } else {
+        transfers.forEach(function(t){
+          lines.push((state.names[t.from]||'')+' → '+(state.names[t.to]||'')+'  '+t.amt.toLocaleString('ko-KR')+'원');
+        });
+      }
     }
     return lines.join('\n');
   }
@@ -2321,7 +2950,7 @@
     var meta = [];
     if(state.courseName) meta.push(state.courseName);
     meta.push(fmtDate(state.roundDate));
-    meta.push(state.mode==='team' ? '팀전' : '스트로크');
+    meta.push(isDrawMode() ? '팀전(뽑기)' : isUpDown() ? '업다운' : state.mode==='match' ? '팀전(매칭)' : '스트로크');
     meta.push(state.holeCount+'홀');
     x.fillStyle='rgba(246,241,228,.72)'; x.font='500 28px '+F;
     x.fillText(meta.join('   ·   '), W/2, 262);
@@ -2346,7 +2975,7 @@
       // 이름
       x.textAlign='left';
       var name = state.names[idx] || ('플레이어'+(idx+1));
-      var hd = state.mode==='team' ? 0 : (state.handicaps[idx]||0);
+      var hd = isTeamMode() ? 0 : (state.handicaps[idx]||0);
       var sub = [];
       if(hd) sub.push('핸디 '+(hd>0?'+':'−')+Math.abs(hd).toLocaleString('ko-KR')+'원');
       var nameY = sub.length ? cy-4 : cy+14;
@@ -2522,7 +3151,9 @@
       var date = document.createElement('div'); date.className='date';
       var d = new Date(r.date);
       var dateLabel = r.roundDate ? fmtDate(r.roundDate) : (d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate());
-      var modeLabel = r.mode==='team' ? ('팀전 · 선입금 '+(r.deposit||0).toLocaleString('ko-KR')+'원') : (r.unit.toLocaleString('ko-KR')+'원/타');
+      var modeLabel = (r.mode==='updown'||r.mode==='match') ? ((r.mode==='updown'?'업다운':'팀전(매칭)')+' · 홀당 '+(r.holeAmount||0).toLocaleString('ko-KR')+'원')
+        : (r.mode==='team') ? ('팀전 · 선입금 '+(r.deposit||0).toLocaleString('ko-KR')+'원')
+        : (r.unit.toLocaleString('ko-KR')+'원/타');
       date.textContent = (r.courseName? (r.courseName+' · '):'') + dateLabel + '  ·  ' + r.holeCount+'홀  ·  '+modeLabel;
       var players = document.createElement('div'); players.className='players';
       players.textContent = r.names.join(', ');
